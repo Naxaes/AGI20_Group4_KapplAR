@@ -1,3 +1,9 @@
+# CUSTOM ADDITIONS
+UpgradeLog.*
+UserSettings/
+#
+
+
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/

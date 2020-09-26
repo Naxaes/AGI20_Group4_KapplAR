@@ -488,7 +488,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 1991c2512ccccb245b7d12e5104cbd24, type: 2}
+  - {fileID: 2100000, guid: 2a2cba2ef6769084da82b50eba952ad5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1177,6 +1177,8 @@ MonoBehaviour:
   floorToPlace: {fileID: 3908168622415699088, guid: 92d1151b60902de4489cc4c9ccb1f631, type: 3}
   placementIndicator: {fileID: 230311371}
   floorPlacementIndicator: {fileID: 1186329733}
+  validPlacementMaterial: {fileID: 2100000, guid: 2a2cba2ef6769084da82b50eba952ad5, type: 2}
+  invalidPlacementMaterial: {fileID: 2100000, guid: 1991c2512ccccb245b7d12e5104cbd24, type: 2}
 --- !u!1 &971079427
 GameObject:
   m_ObjectHideFlags: 0
@@ -1612,7 +1614,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: b55e8732a81b2174cb9d83c9e2a6362b, type: 2}
+  - {fileID: 2100000, guid: 2a2cba2ef6769084da82b50eba952ad5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

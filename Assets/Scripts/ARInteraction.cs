@@ -16,6 +16,10 @@ public class ARInteraction : MonoBehaviour
     public GameObject placementIndicator;
     public GameObject floorPlacementIndicator;
 
+    // Placement indicator materials
+    public Material validPlacementMaterial;
+    public Material invalidPlacementMaterial;
+
     // Pose holds rotation and position of 3D object
     private Pose placementPose;
     private bool placementPoseIsValid = false;
@@ -31,6 +35,8 @@ public class ARInteraction : MonoBehaviour
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
 
+        placementIndicator.SetActive(false);
+
         UpdatePlacementIndicator();
         UpdateFloorIndicator();
     }
@@ -44,8 +50,9 @@ public class ARInteraction : MonoBehaviour
 
             if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
             {
-                PlaceObject(ref kaplaToPlace, ref placementPose);
+                PlaceObject(ref kaplaToPlace, ref placementPose, true);
             }
+
         } else
         {
             UpdateFloorIndicator();
@@ -55,6 +62,7 @@ public class ARInteraction : MonoBehaviour
                 PlaceObject(ref floorToPlace, ref floorPose);
                 floorIsPlaced = true;
                 floorPlacementIndicator.SetActive(false);
+                placementIndicator.SetActive(true);
             }
         }
     }
@@ -66,11 +74,6 @@ public class ARInteraction : MonoBehaviour
     {
         if (floorIsPlaced)
         {
-            if (Input.touchCount == 2 && Input.GetTouch(0).phase == TouchPhase.Stationary)
-            {
-             //   RotatePlacementIndicator();
-            }
-
             UpdatePlacementPose();
         } else
         {
@@ -98,10 +101,16 @@ public class ARInteraction : MonoBehaviour
         }
     }
 
-    private void PlaceObject(ref GameObject gameObject, ref Pose pose)
+    private void PlaceObject(ref GameObject gameObject, ref Pose pose, bool saveObj = false)
     {
-        GameObject newPiece = Instantiate(gameObject, pose.position, pose.rotation);
-        newPiece.transform.SetParent(GameObject.Find("GamePieces").transform);
+        if (saveObj)
+        {
+            GameObject newPiece = Instantiate(gameObject, pose.position, pose.rotation);
+            newPiece.transform.SetParent(GameObject.Find("GamePieces").transform);
+        } else
+        {
+            Instantiate(gameObject, pose.position, pose.rotation);
+        }
     }
 
     void UpdateFloorIndicator()
@@ -119,14 +128,15 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementIndicator()
     {
+        placementIndicator.transform.SetPositionAndRotation(placementPose.position, placementPose.rotation);
         if (placementPoseIsValid)
         {
-            placementIndicator.SetActive(true);
+            placementIndicator.GetComponentInChildren<MeshRenderer>().material = validPlacementMaterial;
             placementIndicator.transform.SetPositionAndRotation(placementPose.position, placementPose.rotation);
         }
         else
         {
-            placementIndicator.SetActive(false);
+            placementIndicator.GetComponentInChildren<MeshRenderer>().material = invalidPlacementMaterial;
         }
     }
 
@@ -159,6 +169,7 @@ public class ARInteraction : MonoBehaviour
     {
 
         placementPose.position = Camera.current.transform.position + 25.0f * Camera.current.transform.forward;
+        placementPose.rotation = placementIndicator.transform.rotation;
         int virtualSceneMask = 1 << 8;
         Collider[] hitColliders = Physics.OverlapBox(placementPose.position, kaplaToPlace.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
         if (hitColliders.Length == 0)

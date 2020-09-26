@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using UnityEngine.XR.ARSubsystems;
 using UnityEngine.UIElements;
 using UnityEngine.PlayerLoop;
+using UnityEngine.EventSystems;
 
 public class ARInteraction : MonoBehaviour
 {
@@ -44,25 +45,29 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (floorIsPlaced)
+        if (!EventSystem.current.IsPointerOverGameObject())
         {
-            UpdatePlacementIndicator();
-
-            if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+            if (floorIsPlaced)
             {
-                PlaceObject(ref kaplaToPlace, ref placementPose, true);
+                UpdatePlacementIndicator();
+
+                if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+                {
+                    PlaceObject(ref kaplaToPlace, ref placementPose, true);
+                }
+
             }
-
-        } else
-        {
-            UpdateFloorIndicator();
-
-            if (floorPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+            else
             {
-                PlaceObject(ref floorToPlace, ref floorPose);
-                floorIsPlaced = true;
-                floorPlacementIndicator.SetActive(false);
-                placementIndicator.SetActive(true);
+                UpdateFloorIndicator();
+
+                if (floorPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+                {
+                    PlaceObject(ref floorToPlace, ref floorPose);
+                    floorIsPlaced = true;
+                    floorPlacementIndicator.SetActive(false);
+                    placementIndicator.SetActive(true);
+                }
             }
         }
     }

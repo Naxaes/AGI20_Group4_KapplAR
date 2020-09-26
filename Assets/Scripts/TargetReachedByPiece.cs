@@ -40,7 +40,7 @@ public class TargetReachedByPiece : MonoBehaviour
     private void OnTriggerStay(Collider other)
     {
         GameObject piece = other.gameObject;
-        if(piece.name == "Game piece" && !hasTouchedThisTrame)
+        if(piece.tag == "Game Piece" && !hasTouchedThisTrame)
         {
             if(!hasEntered)
             {

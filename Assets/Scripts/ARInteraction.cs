@@ -45,15 +45,17 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!EventSystem.current.IsPointerOverGameObject())
-        {
             if (floorIsPlaced)
             {
                 UpdatePlacementIndicator();
 
                 if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
                 {
-                    PlaceObject(ref kaplaToPlace, ref placementPose, true);
+                    // Check if touch is on UI element
+                    if (!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                    {
+                        PlaceObject(ref kaplaToPlace, ref placementPose, true);
+                    }
                 }
 
             }
@@ -63,13 +65,16 @@ public class ARInteraction : MonoBehaviour
 
                 if (floorPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
                 {
-                    PlaceObject(ref floorToPlace, ref floorPose);
-                    floorIsPlaced = true;
-                    floorPlacementIndicator.SetActive(false);
-                    placementIndicator.SetActive(true);
+                    if (!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                    {
+                        PlaceObject(ref floorToPlace, ref floorPose);
+                        floorIsPlaced = true;
+                        floorPlacementIndicator.SetActive(false);
+                        placementIndicator.SetActive(true);
+                    }
                 }
             }
-        }
+    
     }
 
     /*

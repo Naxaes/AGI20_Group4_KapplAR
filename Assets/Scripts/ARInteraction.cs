@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using UnityEngine.XR.ARSubsystems;
 using UnityEngine.UIElements;
 using UnityEngine.PlayerLoop;
+using UnityEngine.EventSystems;
 
 public class ARInteraction : MonoBehaviour
 {
@@ -15,6 +16,10 @@ public class ARInteraction : MonoBehaviour
     public GameObject floorToPlace;
     public GameObject placementIndicator;
     public GameObject floorPlacementIndicator;
+
+    // Placement indicator materials
+    public Material validPlacementMaterial;
+    public Material invalidPlacementMaterial;
 
     // Pose holds rotation and position of 3D object
     private Pose placementPose;
@@ -31,6 +36,8 @@ public class ARInteraction : MonoBehaviour
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
 
+        placementIndicator.SetActive(false);
+
         UpdatePlacementIndicator();
         UpdateFloorIndicator();
     }
@@ -38,25 +45,36 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (floorIsPlaced)
-        {
-            UpdatePlacementIndicator();
-
-            if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+            if (floorIsPlaced)
             {
-                PlaceObject(ref kaplaToPlace, ref placementPose);
-            }
-        } else
-        {
-            UpdateFloorIndicator();
+                UpdatePlacementIndicator();
 
-            if (floorPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
-            {
-                PlaceObject(ref floorToPlace, ref floorPose);
-                floorIsPlaced = true;
-                floorPlacementIndicator.SetActive(false);
+                if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+                {
+                    // Check if touch is on UI element
+                    if (!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                    {
+                        PlaceObject(ref kaplaToPlace, ref placementPose, true);
+                    }
+                }
+
             }
-        }
+            else
+            {
+                UpdateFloorIndicator();
+
+                if (floorPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+                {
+                    if (!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                    {
+                        PlaceObject(ref floorToPlace, ref floorPose);
+                        floorIsPlaced = true;
+                        floorPlacementIndicator.SetActive(false);
+                        placementIndicator.SetActive(true);
+                    }
+                }
+            }
+    
     }
 
     /*
@@ -66,11 +84,6 @@ public class ARInteraction : MonoBehaviour
     {
         if (floorIsPlaced)
         {
-            if (Input.touchCount == 2 && Input.GetTouch(0).phase == TouchPhase.Stationary)
-            {
-             //   RotatePlacementIndicator();
-            }
-
             UpdatePlacementPose();
         } else
         {
@@ -98,9 +111,16 @@ public class ARInteraction : MonoBehaviour
         }
     }
 
-    private void PlaceObject(ref GameObject gameObject, ref Pose pose)
+    private void PlaceObject(ref GameObject gameObject, ref Pose pose, bool saveObj = false)
     {
-        Instantiate(gameObject, pose.position, pose.rotation);
+        if (saveObj)
+        {
+            GameObject newPiece = Instantiate(gameObject, pose.position, pose.rotation);
+            newPiece.transform.SetParent(GameObject.Find("GamePieces").transform);
+        } else
+        {
+            Instantiate(gameObject, pose.position, pose.rotation);
+        }
     }
 
     void UpdateFloorIndicator()
@@ -118,14 +138,15 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementIndicator()
     {
+        placementIndicator.transform.SetPositionAndRotation(placementPose.position, placementPose.rotation);
         if (placementPoseIsValid)
         {
-            placementIndicator.SetActive(true);
+            placementIndicator.GetComponentInChildren<MeshRenderer>().material = validPlacementMaterial;
             placementIndicator.transform.SetPositionAndRotation(placementPose.position, placementPose.rotation);
         }
         else
         {
-            placementIndicator.SetActive(false);
+            placementIndicator.GetComponentInChildren<MeshRenderer>().material = invalidPlacementMaterial;
         }
     }
 
@@ -158,6 +179,7 @@ public class ARInteraction : MonoBehaviour
     {
 
         placementPose.position = Camera.current.transform.position + 25.0f * Camera.current.transform.forward;
+        placementPose.rotation = placementIndicator.transform.rotation;
         int virtualSceneMask = 1 << 8;
         Collider[] hitColliders = Physics.OverlapBox(placementPose.position, kaplaToPlace.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
         if (hitColliders.Length == 0)

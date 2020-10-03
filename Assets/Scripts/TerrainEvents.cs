@@ -31,8 +31,8 @@ public class TerrainEvents : MonoBehaviour
         Vector3 initialEnvironmentPosition = environment.position;
         for (float t = 0f; t < duration; t += Time.deltaTime)
         {
-            Vector3 transformation = Random.onUnitSphere * 0.05f;
-            terrain.position.Scale(transformation + Vector3.one);
+            Vector3 transformation = Random.onUnitSphere * 10f;
+            terrain.position += transformation;
             environment.position.Scale(transformation + Vector3.one);
 
             yield return null;

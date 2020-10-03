@@ -5,9 +5,15 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/MainScene.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/ManoMotion ARFoundation/Scenes/ManoMotionSDKProFeatures.unity
+    guid: 2e8ecbb9ea2e340009ac8d7dd6fbd854
+  - enabled: 0
+    path: Assets/ManoMotionTests.unity
+    guid: 7df8ed926be7049f38ab4b920e544422
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 8d786ca50b5eb944abf98f2e05e5aa37, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 4dcf0cf57b34180438fe176bda2e8ec9, type: 2}

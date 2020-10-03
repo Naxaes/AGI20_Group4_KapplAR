@@ -42,45 +42,45 @@ public class ARInteraction : MonoBehaviour
         UpdateFloorIndicator();
     }
 
+   public void PlacePlank()
+    {
+        if (placementPoseIsValid && floorIsPlaced)
+        {
+            PlaceObject(ref kaplaToPlace, ref placementPose, true);
+        } else
+        {
+            PlaceObject(ref floorToPlace, ref floorPose);
+            floorIsPlaced = true;
+            floorPlacementIndicator.SetActive(false);
+            placementIndicator.SetActive(true);
+        }
+        
+
+    }
+
     // Update is called once per frame
     void Update()
     {
             if (floorIsPlaced)
             {
                 UpdatePlacementIndicator();
-
-                if (placementPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
+                if (Input.GetTouch(0).phase == TouchPhase.Moved)
                 {
-                    // Check if touch is on UI element
-                    if (!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
-                    {
-                        PlaceObject(ref kaplaToPlace, ref placementPose, true);
-                    }
+                    float dx = Input.GetTouch(0).deltaPosition.x;
+                    float dy = Input.GetTouch(0).deltaPosition.y;
+                    // y-axis is UP -> dx for rotation around it.
+                    RotateInstant(new Vector3(dy / 1.5f, dx / 1.5f, 0f));
                 }
-
-            }
-            else
-            {
+             } else
+             {
                 UpdateFloorIndicator();
-
-                if (floorPoseIsValid && Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
-                {
-                    if (!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
-                    {
-                        PlaceObject(ref floorToPlace, ref floorPose);
-                        floorIsPlaced = true;
-                        floorPlacementIndicator.SetActive(false);
-                        placementIndicator.SetActive(true);
-                    }
-                }
-            }
-    
+             }
     }
 
     /*
     * Physics engine related updates
     */
-    private void FixedUpdate()
+     private void FixedUpdate()
     {
         if (floorIsPlaced)
         {
@@ -98,6 +98,14 @@ public class ARInteraction : MonoBehaviour
 
         placementPose.rotation = q;
     }
+
+    void RotateInstant(Vector3 angles)
+    {
+        Quaternion startRotation = placementIndicator.transform.rotation;
+        Quaternion endRotation = Quaternion.Euler(angles) * startRotation;
+        placementIndicator.transform.rotation = endRotation;
+    }
+
 
     private void RayCastDelete()
     {

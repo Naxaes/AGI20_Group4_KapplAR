@@ -47,15 +47,13 @@ public class ARInteraction : MonoBehaviour
         if (placementPoseIsValid && floorIsPlaced)
         {
             PlaceObject(ref kaplaToPlace, ref placementPose, true);
-        } else
+        } else if (!floorIsPlaced)
         {
             PlaceObject(ref floorToPlace, ref floorPose);
             floorIsPlaced = true;
             floorPlacementIndicator.SetActive(false);
             placementIndicator.SetActive(true);
         }
-        
-
     }
 
     // Update is called once per frame
@@ -64,12 +62,12 @@ public class ARInteraction : MonoBehaviour
             if (floorIsPlaced)
             {
                 UpdatePlacementIndicator();
-                if (Input.GetTouch(0).phase == TouchPhase.Moved)
+                if (Input.GetTouch(0).phase == TouchPhase.Moved && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
                 {
                     float dx = Input.GetTouch(0).deltaPosition.x;
                     float dy = Input.GetTouch(0).deltaPosition.y;
                     // y-axis is UP -> dx for rotation around it.
-                    RotateInstant(new Vector3(dy / 1.5f, dx / 1.5f, 0f));
+                    RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
                 }
              } else
              {
@@ -109,7 +107,6 @@ public class ARInteraction : MonoBehaviour
 
     private void RayCastDelete()
     {
-       
         Ray ray = Camera.current.ScreenPointToRay(Input.GetTouch(0).position);
         int virtualSceneMask = 1 << 8;
         float maxDistance = 200.0f;

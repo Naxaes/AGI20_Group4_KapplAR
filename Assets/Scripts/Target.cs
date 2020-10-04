@@ -26,8 +26,8 @@ public class Target : MonoBehaviour
 
     void Update()
     {
-        Debug.Log(initialScale * (Convert.ToSingle(Math.Cos(Time.time)) * 1f + 1.00f));
-        transform.GetChild(0).localScale = initialScale * (Convert.ToSingle(Math.Cos(2*Time.time)) * 0.05f + 1.00f);
+        //Debug.Log(initialScale * (Convert.ToSingle(Math.Cos(Time.time)) * 1f + 1.00f));
+        transform.GetChild(0).localScale = initialScale * (Convert.ToSingle(Math.Cos(2*Time.time)) * 0.1f + 1.00f);
     }
 
     // Update is called once per frame

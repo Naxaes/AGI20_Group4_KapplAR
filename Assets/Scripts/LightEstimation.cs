@@ -10,33 +10,43 @@ public class LightEstimation : MonoBehaviour
 {
 
     [SerializeField]
-    private ARCameraManager arCameraManager;
+    ARCameraManager arCameraManager;
+    public ARCameraManager cameraManager
+    {
+        get { return arCameraManager; }
+        set
+        {
+            if (arCameraManager == value)
+                return;
+
+            if (arCameraManager != null)
+                arCameraManager.frameReceived -= FrameChanged;
+
+            
+            arCameraManager = value;
 
 
-    Light light;
-
-    public float? brightness { get;  set; }
-
-    
-    public float? colorTemperature { get;  set; }
-
-    public Color? colorCorrection { get;  set; }
+            if (arCameraManager != null & enabled)
+                arCameraManager.frameReceived += FrameChanged;
+        }
+    }
 
 
-    public Vector3? mainLightDirection { get;  set; }
+    Light mainLight;
 
-    public Color? mainLightColor { get;  set; }
+    public float? brightness { get; private set; }
 
 
-    public float? mainLightIntensityLumens { get;  set; }
+    public float? colorTemperature { get; private set; }
 
-    
-    //These dont work unfortunately in 2020
-    public SphericalHarmonicsL2? sphericalHarmonics { get;  set; }
+    public Color? colorCorrection { get; private set; }
+
+
+
 
     void Awake()
     {
-        light = GetComponent<Light>();
+        mainLight = GetComponent<Light>();
     }
 
 
@@ -58,27 +68,32 @@ public class LightEstimation : MonoBehaviour
         if (obj.lightEstimation.averageBrightness.HasValue)
         {
             brightness = obj.lightEstimation.averageBrightness.Value;
-            light.intensity = brightness.Value;
+            mainLight.intensity = brightness.Value;
         }
+        else
+        {
+            brightness = null;
+        }
+
         if (obj.lightEstimation.averageColorTemperature.HasValue)
         {
             colorTemperature = obj.lightEstimation.averageColorTemperature.Value;
-            light.colorTemperature = colorTemperature.Value;
+            mainLight.colorTemperature = colorTemperature.Value;
+        }
+        else
+        {
+            colorTemperature = null;
         }
 
         if (obj.lightEstimation.colorCorrection.HasValue)
         {
             colorCorrection = obj.lightEstimation.colorCorrection.Value;
-            light.color = colorCorrection.Value;
+            mainLight.color = colorCorrection.Value;
+        }
+        else
+        {
+            colorCorrection = null;
         }
 
-        /*
-         * 
-         * Not working yet
-        if (asd.averageIntensityInLumens.HasValue)
-        {
-        
-            asd.averageIntensityInLumens = mainLightIntensityLumens.Value;
-        }*/
     }
 }

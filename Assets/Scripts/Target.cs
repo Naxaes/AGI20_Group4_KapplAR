@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TargetReachedByPiece : MonoBehaviour
+public class Target : MonoBehaviour
 {
     const float VALIDATION_TIME = 2f;
     bool hasEntered = false;
@@ -14,30 +15,28 @@ public class TargetReachedByPiece : MonoBehaviour
     public static event TargetReachedEvent onEnter;
     public static event TargetReachedEvent onStay;
     public static event TargetReachedEvent onExit;
+    private Vector3 initialScale;
 
 
     // Start is called before the first frame update
     void Start()
     {
+        initialScale = transform.GetChild(0).localScale;
+    }
 
+    void Update()
+    {
+        //Debug.Log(initialScale * (Convert.ToSingle(Math.Cos(Time.time)) * 1f + 1.00f));
+        transform.GetChild(0).localScale = initialScale * (Convert.ToSingle(Math.Cos(2*Time.time)) * 0.1f + 1.00f);
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        if(!hasTouchedThisTrame)
-        {
-            secondsBeforeValidation = VALIDATION_TIME;
-            if(hasEntered)
-            {
-                onExit?.Invoke();
-                hasEntered = false;
-            }
-        }
-        hasTouchedThisTrame = false;
+        TargetReachedTest();
     }
 
-    private void OnTriggerStay(Collider other)
+    void OnTriggerStay(Collider other)
     {
         GameObject piece = other.gameObject;
         if(piece.tag == "Game Piece" && !hasTouchedThisTrame)
@@ -57,6 +56,20 @@ public class TargetReachedByPiece : MonoBehaviour
         {
             onValidation?.Invoke();
         }
+    }
+
+    void TargetReachedTest()
+    {
+        if (!hasTouchedThisTrame)
+        {
+            secondsBeforeValidation = VALIDATION_TIME;
+            if (hasEntered)
+            {
+                onExit?.Invoke();
+                hasEntered = false;
+            }
+        }
+        hasTouchedThisTrame = false;
     }
 
 

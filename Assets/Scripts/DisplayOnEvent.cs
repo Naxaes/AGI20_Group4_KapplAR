@@ -21,16 +21,16 @@ public class DisplayOnEvent : MonoBehaviour
 
     private void OnEnable()
     {
-        TargetReachedByPiece.onValidation += ()=> DisplayMessage(true);
-        TargetReachedByPiece.onEnter += () =>  DisplayCounter(true);
-        TargetReachedByPiece.onExit += () =>  DisplayCounter(false);
+        Target.onValidation += ()=> DisplayMessage(true);
+        Target.onEnter += () =>  DisplayCounter(true);
+        Target.onExit += () =>  DisplayCounter(false);
     }
 
     private void OnDisable()
     {
-        TargetReachedByPiece.onValidation -= ()=>DisplayMessage(true);
-        TargetReachedByPiece.onEnter -= () =>  DisplayCounter(true);
-        TargetReachedByPiece.onExit -= () =>  DisplayCounter(false);
+        Target.onValidation -= ()=>DisplayMessage(true);
+        Target.onEnter -= () =>  DisplayCounter(true);
+        Target.onExit -= () =>  DisplayCounter(false);
 
     }
 

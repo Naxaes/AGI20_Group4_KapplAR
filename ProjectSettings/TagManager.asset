@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Cube
   - Game Piece
+  - Game Floor
   layers:
   - Default
   - TransparentFX

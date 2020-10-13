@@ -46,6 +46,7 @@ public class ARInteraction : MonoBehaviour
     {
         if (placementPoseIsValid && floorIsPlaced)
         {
+            placementPose.rotation = placementIndicator.transform.rotation;
             PlaceObject(ref kaplaToPlace, ref placementPose, true);
         } else if (!floorIsPlaced)
         {
@@ -99,8 +100,12 @@ public class ARInteraction : MonoBehaviour
 
     void RotateInstant(Vector3 angles)
     {
-        Quaternion startRotation = placementIndicator.transform.rotation;
-        Quaternion endRotation = Quaternion.Euler(angles) * startRotation;
+        Quaternion startRotation = placementIndicator.transform.localRotation;
+        Quaternion endRotation;
+        // Rotate around the camera axis.
+        endRotation = Quaternion.AngleAxis(angles.y, Camera.current.transform.up) * startRotation;
+        endRotation = Quaternion.AngleAxis(angles.x, Camera.current.transform.right) * endRotation;
+
         placementIndicator.transform.rotation = endRotation;
     }
 
@@ -143,11 +148,10 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementIndicator()
     {
-        placementIndicator.transform.SetPositionAndRotation(placementPose.position, placementPose.rotation);
+        placementIndicator.transform.position = placementPose.position;
         if (placementPoseIsValid)
         {
             placementIndicator.GetComponentInChildren<MeshRenderer>().material = validPlacementMaterial;
-            placementIndicator.transform.SetPositionAndRotation(placementPose.position, placementPose.rotation);
         }
         else
         {

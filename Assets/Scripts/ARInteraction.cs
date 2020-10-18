@@ -12,10 +12,12 @@ using UnityEngine.EventSystems;
 public class ARInteraction : MonoBehaviour
 {
     private ARRaycastManager raycastManager;
-    public GameObject kaplaToPlace;
+    //public GameObject kaplaToPlace;
     public GameObject floorToPlace;
-    public GameObject placementIndicator;
+    private GameObject placementIndicator;
     public GameObject floorPlacementIndicator;
+
+    private Level level;
 
     // Placement indicator materials
     public Material validPlacementMaterial;
@@ -29,12 +31,22 @@ public class ARInteraction : MonoBehaviour
     private bool floorIsPlaced = false;
     private bool floorPoseIsValid = false;
 
+
+    const float kTapDuration = 0.125f;
+    float fingerOnScreenDuration = 0f;
+    bool isFingerOnScreen = false;
+
+
     // Start is called before the first frame update
     void Start()
     {
         raycastManager = FindObjectOfType<ARRaycastManager>();
+        placementIndicator = Instantiate(level.inventory.currentItem.gameObject, new Vector3(), new Quaternion());
+
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
+
+        level = GetComponent<Level>();
 
         placementIndicator.SetActive(false);
 
@@ -44,10 +56,10 @@ public class ARInteraction : MonoBehaviour
 
    public void PlacePlank()
     {
-        if (placementPoseIsValid && floorIsPlaced)
+        if (placementPoseIsValid && floorIsPlaced && level.inventory.UseItem())
         {
             placementPose.rotation = placementIndicator.transform.rotation;
-            PlaceObject(ref kaplaToPlace, ref placementPose, true);
+            PlaceObject(ref level.inventory.currentItem.gameObject, ref placementPose, true);
         } else if (!floorIsPlaced)
         {
             PlaceObject(ref floorToPlace, ref floorPose);
@@ -60,20 +72,48 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-            if (floorIsPlaced)
+        if (floorIsPlaced)
+        {
+            UpdatePlacementIndicator();
+                
+            if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
             {
-                UpdatePlacementIndicator();
-                if (Input.GetTouch(0).phase == TouchPhase.Moved && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                Touch touch = Input.GetTouch(0);
+                if (touch.phase == TouchPhase.Began)
+                {
+                    isFingerOnScreen = true;
+                }
+                if (touch.phase == TouchPhase.Stationary && isFingerOnScreen)
+                {
+                    fingerOnScreenDuration += touch.deltaTime;
+                    if (Time.time - fingerOnScreenDuration >= kTapDuration)
+                    {
+                        PlacePlank();
+                        fingerOnScreenDuration = 0f;
+                        isFingerOnScreen = false;
+                    }
+                }
+                if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                {
+                    fingerOnScreenDuration = 0f;
+                    isFingerOnScreen = false;
+                }
+                if (touch.phase == TouchPhase.Moved)
                 {
                     float dx = Input.GetTouch(0).deltaPosition.x;
                     float dy = Input.GetTouch(0).deltaPosition.y;
                     // y-axis is UP -> dx for rotation around it.
                     RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
                 }
-             } else
-             {
-                UpdateFloorIndicator();
-             }
+            }
+           
+                
+            
+                
+            } else
+            {
+            UpdateFloorIndicator();
+            }
     }
 
     /*
@@ -190,7 +230,7 @@ public class ARInteraction : MonoBehaviour
         placementPose.position = Camera.current.transform.position + 25.0f * Camera.current.transform.forward;
         placementPose.rotation = placementIndicator.transform.rotation;
         int virtualSceneMask = 1 << 8;
-        Collider[] hitColliders = Physics.OverlapBox(placementPose.position, kaplaToPlace.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
+        Collider[] hitColliders = Physics.OverlapBox(placementPose.position, level.inventory.currentItem.gameObject.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
         if (hitColliders.Length == 0)
             placementPoseIsValid = true;
         else

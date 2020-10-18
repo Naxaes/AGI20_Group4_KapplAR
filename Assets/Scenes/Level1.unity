@@ -1333,9 +1333,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12f575e4f12eb8047b5efeae89f22e89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  kaplaToPlace: {fileID: 7161484846922876594, guid: 59a2c92b26805714da3b78f8dcbd3739, type: 3}
   floorToPlace: {fileID: 3908168622415699088, guid: 92d1151b60902de4489cc4c9ccb1f631, type: 3}
-  placementIndicator: {fileID: 370109413}
   floorPlacementIndicator: {fileID: 972015695}
   validPlacementMaterial: {fileID: 2100000, guid: 2a2cba2ef6769084da82b50eba952ad5, type: 2}
   invalidPlacementMaterial: {fileID: 2100000, guid: 1991c2512ccccb245b7d12e5104cbd24, type: 2}
@@ -2079,7 +2077,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1162090232
 RectTransform:
   m_ObjectHideFlags: 0

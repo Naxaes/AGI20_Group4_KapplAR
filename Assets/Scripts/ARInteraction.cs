@@ -15,6 +15,7 @@ public class ARInteraction : MonoBehaviour
     //public GameObject kaplaToPlace;
     public GameObject floorToPlace;
     private GameObject placementIndicator;
+    private Bloc currentBloc;
     public GameObject floorPlacementIndicator;
 
     private Level level;
@@ -42,12 +43,14 @@ public class ARInteraction : MonoBehaviour
     void Start()
     {
         raycastManager = FindObjectOfType<ARRaycastManager>();
-        placementIndicator = Instantiate(level.inventory.currentItem.gameObject, new Vector3(), new Quaternion());
+
+        level = GetComponent<Level>();
+        currentBloc = level.inventory.currentItem;
+        placementIndicator = Instantiate(currentBloc.gameObject, new Vector3(), new Quaternion());
 
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
 
-        level = GetComponent<Level>();
 
         placementIndicator.SetActive(false);
 
@@ -73,48 +76,52 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (floorIsPlaced)
+        if (!floorIsPlaced)
+        {
+            UpdateFloorIndicator();
+        } else
         {
             UpdatePlacementIndicator();
-                
-            if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+        }
+        
+        if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+        {
+            Touch touch = Input.GetTouch(0);
+            if (touch.phase == TouchPhase.Began)
             {
-                Touch touch = Input.GetTouch(0);
-                if (touch.phase == TouchPhase.Began)
+                if(floorIsPlaced)
                 {
                     isFingerOnScreen = true;
-                }
-                if (touch.phase == TouchPhase.Stationary && isFingerOnScreen)
+                } else
                 {
-                    fingerOnScreenDuration += touch.deltaTime;
-                    if (Time.time - fingerOnScreenDuration >= kTapDurationThreshold)
-                    {
-                        PlacePlank();
-                        fingerOnScreenDuration = 0f;
-                        isFingerOnScreen = false;
-                    }
+                    PlacePlank();
                 }
-                if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            }
+            if (touch.phase == TouchPhase.Stationary && isFingerOnScreen)
+            {
+                fingerOnScreenDuration += touch.deltaTime;
+                if (Time.time - fingerOnScreenDuration >= kTapDurationThreshold)
                 {
+                    PlacePlank();
                     fingerOnScreenDuration = 0f;
                     isFingerOnScreen = false;
                 }
-                if (touch.phase == TouchPhase.Moved && touch.deltaPosition.magnitude > kTapMoveThreshold)
-                {
-                    float dx = Input.GetTouch(0).deltaPosition.x;
-                    float dy = Input.GetTouch(0).deltaPosition.y;
-                    // y-axis is UP -> dx for rotation around it.
-                    RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
-                }
             }
-           
-                
-            
-                
-            } else
+            if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
-            UpdateFloorIndicator();
+                fingerOnScreenDuration = 0f;
+                isFingerOnScreen = false;
             }
+            if (touch.phase == TouchPhase.Moved && touch.deltaPosition.magnitude > kTapMoveThreshold && isFingerOnScreen)
+            {
+                float dx = Input.GetTouch(0).deltaPosition.x;
+                float dy = Input.GetTouch(0).deltaPosition.y;
+                // y-axis is UP -> dx for rotation around it.
+                RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
+            }
+        }
+
+        
     }
 
     /*
@@ -189,6 +196,13 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementIndicator()
     {
+        if(level.inventory.currentItem != currentBloc)
+        {
+            Destroy(placementIndicator);
+            currentBloc = level.inventory.currentItem;
+            placementIndicator = Instantiate(currentBloc.gameObject, new Vector3(), new Quaternion());
+        }
+
         placementIndicator.transform.position = placementPose.position;
         if (placementPoseIsValid)
         {

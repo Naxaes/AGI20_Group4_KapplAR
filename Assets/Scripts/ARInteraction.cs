@@ -32,7 +32,8 @@ public class ARInteraction : MonoBehaviour
     private bool floorPoseIsValid = false;
 
 
-    const float kTapDuration = 0.125f;
+    const float kTapDurationThreshold = 0.125f;
+    const float kTapMoveThreshold = 15.0f;
     float fingerOnScreenDuration = 0f;
     bool isFingerOnScreen = false;
 
@@ -86,7 +87,7 @@ public class ARInteraction : MonoBehaviour
                 if (touch.phase == TouchPhase.Stationary && isFingerOnScreen)
                 {
                     fingerOnScreenDuration += touch.deltaTime;
-                    if (Time.time - fingerOnScreenDuration >= kTapDuration)
+                    if (Time.time - fingerOnScreenDuration >= kTapDurationThreshold)
                     {
                         PlacePlank();
                         fingerOnScreenDuration = 0f;
@@ -98,7 +99,7 @@ public class ARInteraction : MonoBehaviour
                     fingerOnScreenDuration = 0f;
                     isFingerOnScreen = false;
                 }
-                if (touch.phase == TouchPhase.Moved)
+                if (touch.phase == TouchPhase.Moved && touch.deltaPosition.magnitude > kTapMoveThreshold)
                 {
                     float dx = Input.GetTouch(0).deltaPosition.x;
                     float dy = Input.GetTouch(0).deltaPosition.y;

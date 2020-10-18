@@ -5,7 +5,7 @@ using UnityEngine;
 public class Inventory
 {
 
-    Dictionary<Bloc, int> inventory;
+    public Dictionary<Bloc, int> inventory { get; private set; }
     public Bloc currentItem { get; private set; }
 
     // Start is called before the first frame update

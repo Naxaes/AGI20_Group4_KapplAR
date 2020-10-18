@@ -6,8 +6,8 @@ using UnityEngine;
 public abstract class Bloc : IEquatable<Bloc>
 {
     public GameObject gameObject;
-    protected int blocId;
-    protected String label;
+    public int blocId { get; protected set; }
+    public String label { get; protected set;}
 
     public bool Equals(Bloc other)
     {

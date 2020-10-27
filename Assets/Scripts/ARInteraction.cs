@@ -9,6 +9,12 @@ using UnityEngine.UIElements;
 using UnityEngine.PlayerLoop;
 using UnityEngine.EventSystems;
 
+public enum InteractionMode
+{
+    Placement,
+    Cutting
+}
+
 public class ARInteraction : MonoBehaviour
 {
     private ARRaycastManager raycastManager;
@@ -29,6 +35,8 @@ public class ARInteraction : MonoBehaviour
     private bool floorIsPlaced = false;
     private bool floorPoseIsValid = false;
 
+    private InteractionMode interactionMode =  InteractionMode.Placement;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -40,6 +48,11 @@ public class ARInteraction : MonoBehaviour
 
         UpdatePlacementIndicator();
         UpdateFloorIndicator();
+    }
+
+    public void SetInteractioMode()
+    {
+        interactionMode = InteractionMode.Cutting;
     }
 
    public void PlacePlank()
@@ -60,20 +73,27 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-            if (floorIsPlaced)
-            {
-                UpdatePlacementIndicator();
-                if (Input.GetTouch(0).phase == TouchPhase.Moved && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+        switch (interactionMode) {
+            case InteractionMode.Placement:
+                if (floorIsPlaced)
                 {
-                    float dx = Input.GetTouch(0).deltaPosition.x;
-                    float dy = Input.GetTouch(0).deltaPosition.y;
-                    // y-axis is UP -> dx for rotation around it.
-                    RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
+                    UpdatePlacementIndicator();
+                    if (Input.GetTouch(0).phase == TouchPhase.Moved && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                    {
+                        float dx = Input.GetTouch(0).deltaPosition.x;
+                        float dy = Input.GetTouch(0).deltaPosition.y;
+                        // y-axis is UP -> dx for rotation around it.
+                        RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
+                    }
+                } else
+                {
+                    UpdateFloorIndicator();
                 }
-             } else
-             {
-                UpdateFloorIndicator();
-             }
+                break;
+            case InteractionMode.Cutting:
+                break;
+
+        }
     }
 
     /*
@@ -81,12 +101,20 @@ public class ARInteraction : MonoBehaviour
     */
      private void FixedUpdate()
     {
-        if (floorIsPlaced)
+        switch (interactionMode)
         {
-            UpdatePlacementPose();
-        } else
-        {
-            UpdateFloorPose();
+            case InteractionMode.Placement:
+                if (floorIsPlaced)
+                {
+                    UpdatePlacementPose();
+                }
+                else
+                {
+                    UpdateFloorPose();
+                }
+                break;
+            case InteractionMode.Cutting:
+                break;
         }
     }
 
@@ -186,7 +214,6 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementPose()
     {
-
         placementPose.position = Camera.current.transform.position + 25.0f * Camera.current.transform.forward;
         placementPose.rotation = placementIndicator.transform.rotation;
         int virtualSceneMask = 1 << 8;

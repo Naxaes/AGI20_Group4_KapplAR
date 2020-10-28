@@ -5,4 +5,6 @@ using UnityEngine;
 public abstract class Level : MonoBehaviour
 {
     public Inventory inventory { get; protected set; }
+
+    public abstract void Reset();
 }

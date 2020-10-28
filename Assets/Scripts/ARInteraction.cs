@@ -36,7 +36,8 @@ public class ARInteraction : MonoBehaviour
     const float kTapDurationThreshold = 0.125f;
     const float kTapMoveThreshold = 15.0f;
     float fingerOnScreenDuration = 0f;
-    bool isFingerOnScreen = false;
+    bool fingerHasMoved = false;
+    bool shouldReactToTapEvents = false;
 
 
     // Start is called before the first frame update
@@ -47,6 +48,8 @@ public class ARInteraction : MonoBehaviour
         level = GetComponent<Level>();
         currentBloc = level.inventory.currentItem;
         placementIndicator = Instantiate(currentBloc.gameObject, new Vector3(), new Quaternion());
+        placementIndicator.GetComponent<Rigidbody>().isKinematic = true;
+        placementIndicator.GetComponent<Rigidbody>().detectCollisions = false;
 
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
@@ -91,33 +94,32 @@ public class ARInteraction : MonoBehaviour
             {
                 if(floorIsPlaced)
                 {
-                    isFingerOnScreen = true;
+                    shouldReactToTapEvents = true;
                 } else
                 {
                     PlacePlank();
                 }
             }
-            if (touch.phase == TouchPhase.Stationary && isFingerOnScreen)
+            if (touch.phase == TouchPhase.Stationary && shouldReactToTapEvents)
             {
-                fingerOnScreenDuration += touch.deltaTime;
-                if (Time.time - fingerOnScreenDuration >= kTapDurationThreshold)
+            }
+            if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && shouldReactToTapEvents)
+            {
+                if(!fingerHasMoved)
                 {
                     PlacePlank();
-                    fingerOnScreenDuration = 0f;
-                    isFingerOnScreen = false;
                 }
+                fingerHasMoved = false;
+                shouldReactToTapEvents = false;
+               
             }
-            if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
-                fingerOnScreenDuration = 0f;
-                isFingerOnScreen = false;
-            }
-            if (touch.phase == TouchPhase.Moved && touch.deltaPosition.magnitude > kTapMoveThreshold && isFingerOnScreen)
+            if (touch.phase == TouchPhase.Moved && shouldReactToTapEvents)
             {
                 float dx = Input.GetTouch(0).deltaPosition.x;
                 float dy = Input.GetTouch(0).deltaPosition.y;
                 // y-axis is UP -> dx for rotation around it.
                 RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
+                fingerHasMoved = true;
             }
         }
 
@@ -201,10 +203,12 @@ public class ARInteraction : MonoBehaviour
             Destroy(placementIndicator);
             currentBloc = level.inventory.currentItem;
             placementIndicator = Instantiate(currentBloc.gameObject, new Vector3(), new Quaternion());
+            placementIndicator.GetComponent<Rigidbody>().isKinematic = true;
+            placementIndicator.GetComponent<Rigidbody>().detectCollisions = false;
         }
 
         placementIndicator.transform.position = placementPose.position;
-        if (placementPoseIsValid)
+        if (placementPoseIsValid && level.inventory.inventory[currentBloc] > 0)
         {
             placementIndicator.GetComponentInChildren<MeshRenderer>().material = validPlacementMaterial;
         }

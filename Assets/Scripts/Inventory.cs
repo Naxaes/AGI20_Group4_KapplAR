@@ -1,17 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+
+[System.Serializable]
+public class ItemUsedEvent : UnityEvent<Bloc>
+{}
 
 public class Inventory
 {
 
     public Dictionary<Bloc, int> inventory { get; private set; }
     public Bloc currentItem { get; private set; }
+    public ItemUsedEvent ItemUsedEvent { get; }
 
     // Start is called before the first frame update
     public Inventory()
     {
         inventory = new Dictionary<Bloc, int>();
+        ItemUsedEvent = new ItemUsedEvent();
     }
     
     public void AddItem(Bloc bloc, int quantity = 1)
@@ -39,6 +46,7 @@ public class Inventory
         if(inventory[currentItem]>0)
         {
             inventory[currentItem]--;
+            ItemUsedEvent.Invoke(currentItem);
             return true;
         } else
         {

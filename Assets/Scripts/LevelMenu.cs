@@ -29,6 +29,13 @@ public class LevelMenu : MonoBehaviour
             newButton.transform.GetChild(0).GetComponent<Text>().text = item.Key.label;
             newButton.transform.GetChild(1).GetComponent<Text>().text = item.Value.ToString();
             newButton.GetComponent<Button>().onClick.AddListener(() => { changeSelectedItem(item.Key, newButton); });
+            level.inventory.ItemUsedEvent.AddListener((Bloc b) => 
+            {
+                if (item.Key == b)
+                {
+                    newButton.transform.GetChild(1).GetComponent<Text>().text = level.inventory.inventory[b].ToString();
+                }
+            });
             if (item.Key.blocId == level.inventory.currentItem.blocId)
             {
                 newButton.transform.GetComponent<Image>().color = new Color( 38.0f/255, 224.0f/255, 85.0f/255); 
@@ -39,7 +46,6 @@ public class LevelMenu : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
     }
 
     void changeSelectedItem(Bloc item, GameObject selectedButton)

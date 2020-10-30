@@ -37,6 +37,9 @@ public class ARInteraction : MonoBehaviour
 
     private InteractionMode interactionMode =  InteractionMode.Placement;
 
+    private GameObject objectToSlice = null;
+    private Vector3 slicePostion;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -50,9 +53,16 @@ public class ARInteraction : MonoBehaviour
         UpdateFloorIndicator();
     }
 
-    public void SetInteractioMode()
+    public void SetInteractioModeCutting()
     {
         interactionMode = InteractionMode.Cutting;
+        placementIndicator.SetActive(false);
+    }
+
+    public void SetInteractionModePlacement()
+    {
+        interactionMode = InteractionMode.Placement;
+        placementIndicator.SetActive(true);
     }
 
    public void PlacePlank()
@@ -91,6 +101,13 @@ public class ARInteraction : MonoBehaviour
                 }
                 break;
             case InteractionMode.Cutting:
+                if (objectToSlice != null)
+                {
+                    if (Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                    {
+                        objectToSlice.GetComponent<SlicePiece>().Split(slicePostion);
+                    }
+                }
                 break;
 
         }
@@ -114,8 +131,62 @@ public class ARInteraction : MonoBehaviour
                 }
                 break;
             case InteractionMode.Cutting:
+                RaycastHit rayHit;
+                bool hit = RaycastGamePieces(out rayHit);
+                if (hit)
+                {
+                    slicePostion = rayHit.point;
+                    SliceAnimation(rayHit);
+                }
+                else
+                {
+                    if (objectToSlice != null)
+                    {
+                        objectToSlice.GetComponent<SlicePiece>().StopSliceIndicatorAnimation();
+                        objectToSlice = null;
+                    }
+                }
+
                 break;
         }
+    }
+
+    private void SliceAnimation(RaycastHit hit)
+    {
+        // First check if we have an animation acitve
+        if (objectToSlice == null)
+        {
+            objectToSlice = hit.collider.gameObject;
+            // Start the animation
+            objectToSlice.GetComponent<SlicePiece>().StartSliceIndicatorAnimation(hit.point);
+        } // Check if we hit a new object
+        else if (objectToSlice.GetInstanceID() != hit.collider.gameObject.GetInstanceID())
+        {
+            objectToSlice.GetComponent<SlicePiece>().StopSliceIndicatorAnimation();
+            objectToSlice = hit.collider.gameObject;
+            objectToSlice.GetComponent<SlicePiece>().StartSliceIndicatorAnimation(hit.point);
+        } // Otherwise update position of ray hit
+        else
+        {
+            objectToSlice.GetComponent<SlicePiece>().UpdateSliceIndicator(hit.point);
+        }
+    }
+
+    private bool RaycastGamePieces(out RaycastHit hit)
+    {
+        Vector3 screenCenter  = Camera.current.ViewportToScreenPoint(new Vector3(0.5f, 0.5f));
+        Ray ray = Camera.current.ScreenPointToRay(screenCenter);
+        int virtualSceneMask = 1 << 8;
+        float maxDistance = 200.0f;
+        if (Physics.Raycast(ray, out hit, maxDistance, virtualSceneMask))
+        {
+            if (hit.collider.gameObject.CompareTag("Game Piece"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void RotatePlacementIndicator()

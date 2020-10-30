@@ -89,6 +89,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sliceSFX: {fileID: 6987044975301444734, guid: f07b9740c7b216548a2ed6a295aae264, type: 3}
+  active: 0
 --- !u!1001 &532870621318470933
 PrefabInstance:
   m_ObjectHideFlags: 0

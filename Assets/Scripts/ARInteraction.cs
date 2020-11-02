@@ -8,6 +8,13 @@ using UnityEngine.XR.ARSubsystems;
 using UnityEngine.UIElements;
 using UnityEngine.PlayerLoop;
 using UnityEngine.EventSystems;
+using System;
+
+public enum InteractionMode
+{
+    Placement,
+    Slicing
+}
 
 public class ARInteraction : MonoBehaviour
 {
@@ -32,10 +39,11 @@ public class ARInteraction : MonoBehaviour
     private bool floorIsPlaced = false;
     private bool floorPoseIsValid = false;
 
+    private InteractionMode interactionMode = InteractionMode.Placement;
 
-    const float kTapDurationThreshold = 0.125f;
-    const float kTapMoveThreshold = 15.0f;
-    float fingerOnScreenDuration = 0f;
+    private GameObject objectToSlice = null;
+    private Vector3 slicePostion;
+
     bool fingerHasMoved = false;
     bool shouldReactToTapEvents = false;
 
@@ -79,48 +87,62 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!floorIsPlaced)
+        switch(interactionMode)
         {
-            UpdateFloorIndicator();
-        } else
-        {
-            UpdatePlacementIndicator();
-        }
-        
-        if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
-        {
-            Touch touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Began)
-            {
-                if(floorIsPlaced)
+            case InteractionMode.Placement:
+
+                if (!floorIsPlaced)
                 {
-                    shouldReactToTapEvents = true;
+                    UpdateFloorIndicator();
                 } else
                 {
-                    PlacePlank();
+                    UpdatePlacementIndicator();
                 }
-            }
-            if (touch.phase == TouchPhase.Stationary && shouldReactToTapEvents)
-            {
-            }
-            if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && shouldReactToTapEvents)
-            {
-                if(!fingerHasMoved)
+        
+                if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
                 {
-                    PlacePlank();
-                }
-                fingerHasMoved = false;
-                shouldReactToTapEvents = false;
+                    Touch touch = Input.GetTouch(0);
+                    if (touch.phase == TouchPhase.Began)
+                    {
+                        if(floorIsPlaced)
+                        {
+                            shouldReactToTapEvents = true;
+                        } else
+                        {
+                            PlacePlank();
+                        }
+                    }
+                    if (touch.phase == TouchPhase.Stationary && shouldReactToTapEvents)
+                    {
+                    }
+                    if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && shouldReactToTapEvents)
+                    {
+                        if(!fingerHasMoved)
+                        {
+                            PlacePlank();
+                        }
+                        fingerHasMoved = false;
+                        shouldReactToTapEvents = false;
                
-            }
-            if (touch.phase == TouchPhase.Moved && shouldReactToTapEvents)
-            {
-                float dx = Input.GetTouch(0).deltaPosition.x;
-                float dy = Input.GetTouch(0).deltaPosition.y;
-                // y-axis is UP -> dx for rotation around it.
-                RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
-                fingerHasMoved = true;
-            }
+                    }
+                    if (touch.phase == TouchPhase.Moved && shouldReactToTapEvents)
+                    {
+                        float dx = Input.GetTouch(0).deltaPosition.x;
+                        float dy = Input.GetTouch(0).deltaPosition.y;
+                        // y-axis is UP -> dx for rotation around it.
+                        RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
+                        fingerHasMoved = true;
+                    }
+                }
+                break;
+
+            case InteractionMode.Slicing:
+                if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                {
+                    Debug.Log("slice");
+                    objectToSlice.GetComponent<SlicePiece>().Split(slicePostion);
+                }
+                break;
         }
 
         
@@ -131,13 +153,97 @@ public class ARInteraction : MonoBehaviour
     */
      private void FixedUpdate()
     {
-        if (floorIsPlaced)
+        switch(interactionMode)
         {
-            UpdatePlacementPose();
-        } else
-        {
-            UpdateFloorPose();
+            case InteractionMode.Placement:
+                if (floorIsPlaced)
+                {
+                    UpdatePlacementPose();
+                } else
+                {
+                    UpdateFloorPose();
+                }
+                break;
+
+            case InteractionMode.Slicing:
+                RaycastHit rayHit;
+                bool hit = RaycastGamePieces(out rayHit);
+                if (hit)
+                {
+                    slicePostion = rayHit.point;
+                    SliceAnimation(rayHit);
+                }
+                else
+                {
+                    if (objectToSlice != null)
+                    {
+                        objectToSlice.GetComponent<SlicePiece>().StopSliceIndicatorAnimation();
+                        objectToSlice = null;
+                    }
+                }
+
+                break;
         }
+    }
+
+    private void SliceAnimation(RaycastHit hit)
+    {
+        // First check if we have an animation acitve
+        if (objectToSlice == null)
+        {
+            objectToSlice = hit.collider.gameObject;
+            // Start the animation
+            objectToSlice.GetComponent<SlicePiece>().StartSliceIndicatorAnimation(hit.point);
+        } // Check if we hit a new object
+        else if (objectToSlice.GetInstanceID() != hit.collider.gameObject.GetInstanceID())
+        {
+            objectToSlice.GetComponent<SlicePiece>().StopSliceIndicatorAnimation();
+            objectToSlice = hit.collider.gameObject;
+            objectToSlice.GetComponent<SlicePiece>().StartSliceIndicatorAnimation(hit.point);
+        } // Otherwise update position of ray hit
+        else
+        {
+            objectToSlice.GetComponent<SlicePiece>().UpdateSliceIndicator(hit.point);
+        }
+    }
+
+    private bool RaycastGamePieces(out RaycastHit hit)
+    {
+        Vector3 screenCenter = Camera.current.ViewportToScreenPoint(new Vector3(0.5f, 0.5f));
+        Ray ray = Camera.current.ScreenPointToRay(screenCenter);
+        int virtualSceneMask = 1 << 8;
+        float maxDistance = 200.0f;
+        if (Physics.Raycast(ray, out hit, maxDistance, virtualSceneMask))
+        {
+            if (hit.collider.gameObject.CompareTag("Game Piece"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void switchInteractionMode(InteractionMode mode)
+    {
+        switch(mode)
+        {
+            case InteractionMode.Slicing:
+                interactionMode = InteractionMode.Slicing;
+                placementIndicator.SetActive(false);
+                break;
+            case InteractionMode.Placement:
+                interactionMode = InteractionMode.Placement;
+                placementIndicator.SetActive(true);
+                break;
+        }
+    }
+
+    public void switchInteractionMode()
+    {
+        InteractionMode[] interactionModes =(InteractionMode[]) Enum.GetValues(interactionMode.GetType());
+        int j = Array.IndexOf(interactionModes, interactionMode) + 1;
+        switchInteractionMode(interactionModes[j%interactionModes.Length]);
     }
 
     void RotatePlacementIndicator()

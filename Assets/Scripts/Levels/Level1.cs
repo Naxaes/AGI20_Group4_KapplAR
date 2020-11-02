@@ -15,7 +15,7 @@ public class Level1 : Level
     {
         inventory = new Inventory();
         inventory.AddItem(new WoodBloc(), 100);
-        inventory.AddItem(new BlocTest2(), 1);
+        inventory.AddItem(new JellyBloc(), 5);
     }
 
     // Update is called once per frame

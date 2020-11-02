@@ -12,9 +12,8 @@ GameObject:
   - component: {fileID: 9054867307556501183}
   - component: {fileID: 8540802993854863602}
   - component: {fileID: -701003502374606211}
-  - component: {fileID: 5060601124372596557}
   m_Layer: 8
-  m_Name: Game piece
+  m_Name: Jelly Piece
   m_TagString: Game Piece
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -31,7 +30,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 11.7, y: 0.78, z: 2.34}
   m_Children:
-  - {fileID: 2548658759584678723}
+  - {fileID: 2876134927152596028}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -76,31 +75,25 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &5060601124372596557
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7161484846922876594}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a8b43751d0dec444c851ca61a7c226ef, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sliceSFX: {fileID: 4514211719691634801, guid: 7044dba4f9cb6eb46a12e912b65b1c2f, type: 3}
-  active: 0
---- !u!1001 &4949568071968437621
+--- !u!1001 &4613048489980916234
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 4288801818420289174}
     m_Modifications:
+    - target: {fileID: 7489136894046942760, guid: e355d988f5623664190729ce80b764e6, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 7c2ee6043ed9ada4280c60dc123180f6, type: 2}
     - target: {fileID: 7489136894046942762, guid: e355d988f5623664190729ce80b764e6, type: 3}
       propertyPath: m_Name
       value: Cube
       objectReference: {fileID: 0}
+    - target: {fileID: 7489136894046942763, guid: e355d988f5623664190729ce80b764e6, type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 13400000, guid: b287baf760b44da4aad97a3e463ef7e0, type: 2}
     - target: {fileID: 7489136894046942774, guid: e355d988f5623664190729ce80b764e6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -147,8 +140,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e355d988f5623664190729ce80b764e6, type: 3}
---- !u!4 &2548658759584678723 stripped
+--- !u!4 &2876134927152596028 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7489136894046942774, guid: e355d988f5623664190729ce80b764e6, type: 3}
-  m_PrefabInstance: {fileID: 4949568071968437621}
+  m_PrefabInstance: {fileID: 4613048489980916234}
   m_PrefabAsset: {fileID: 0}

@@ -12,7 +12,7 @@ using UnityEngine.EventSystems;
 public enum InteractionMode
 {
     Placement,
-    Cutting
+    Slicing
 }
 
 public class ARInteraction : MonoBehaviour
@@ -53,9 +53,9 @@ public class ARInteraction : MonoBehaviour
         UpdateFloorIndicator();
     }
 
-    public void SetInteractioModeCutting()
+    public void SetInteractioModeSlicing()
     {
-        interactionMode = InteractionMode.Cutting;
+        interactionMode = InteractionMode.Slicing;
         placementIndicator.SetActive(false);
     }
 
@@ -100,7 +100,7 @@ public class ARInteraction : MonoBehaviour
                     UpdateFloorIndicator();
                 }
                 break;
-            case InteractionMode.Cutting:
+            case InteractionMode.Slicing:
                 if (objectToSlice != null)
                 {
                     if (Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
@@ -130,7 +130,7 @@ public class ARInteraction : MonoBehaviour
                     UpdateFloorPose();
                 }
                 break;
-            case InteractionMode.Cutting:
+            case InteractionMode.Slicing:
                 RaycastHit rayHit;
                 bool hit = RaycastGamePieces(out rayHit);
                 if (hit)

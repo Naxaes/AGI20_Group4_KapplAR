@@ -67,7 +67,6 @@ Shader "Unlit/SimpleUnlitTexturedShader"
     float4 col = float4(0.0f, 0.0f, 0.0f, 1.0f);
     float pi = 3.1415;
 
-   // float s = _Time.x - _AnimTime; // smoothstep(0.0f, 1.0f, _AnimTime);
     float s = 1.0f; // smoothstep(0.0f, 1.0f, (_Time.y - _AnimTimeStart) * 3.0f);
 
     float s2 = 1.0f;// smoothstep(0.0f, -0.2f, _Time.y - _AnimTimeEnd);
@@ -80,7 +79,6 @@ Shader "Unlit/SimpleUnlitTexturedShader"
     float t_fallof = pow(t, 2.0);
     col.rgb = float3(t_fallof * 1.0f, t_fallof * 0.33f, t_fallof * 0.02f) * tex2D(_MainTex, tex).x * 2.5f;
     col.rgb = col.rgb + float3(t_fallof, t_fallof, t_fallof) / 1.5f;
-    //col.r = col.r * ((0.1f + tex2D(_MainTex, tex).x) * 2.0f);
 
     return col;
 }

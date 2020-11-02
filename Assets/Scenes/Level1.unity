@@ -2006,7 +2006,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Cut Planks
+  m_Text: Slice Planks
 --- !u!222 &953711231
 CanvasRenderer:
   m_ObjectHideFlags: 0

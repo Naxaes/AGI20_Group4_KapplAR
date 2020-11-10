@@ -8,6 +8,13 @@ using UnityEngine.XR.ARSubsystems;
 using UnityEngine.UIElements;
 using UnityEngine.PlayerLoop;
 using UnityEngine.EventSystems;
+using System;
+
+public enum InteractionMode
+{
+    Placement,
+    Slicing
+}
 
 public enum InteractionMode
 {
@@ -18,10 +25,13 @@ public enum InteractionMode
 public class ARInteraction : MonoBehaviour
 {
     private ARRaycastManager raycastManager;
-    public GameObject kaplaToPlace;
+    //public GameObject kaplaToPlace;
     public GameObject floorToPlace;
-    public GameObject placementIndicator;
+    private GameObject placementIndicator;
+    private Bloc currentBloc;
     public GameObject floorPlacementIndicator;
+
+    private Level level;
 
     // Placement indicator materials
     public Material validPlacementMaterial;
@@ -35,17 +45,29 @@ public class ARInteraction : MonoBehaviour
     private bool floorIsPlaced = false;
     private bool floorPoseIsValid = false;
 
-    private InteractionMode interactionMode =  InteractionMode.Placement;
+    private InteractionMode interactionMode = InteractionMode.Placement;
 
     private GameObject objectToSlice = null;
     private Vector3 slicePostion;
+
+    bool fingerHasMoved = false;
+    bool shouldReactToTapEvents = false;
+
 
     // Start is called before the first frame update
     void Start()
     {
         raycastManager = FindObjectOfType<ARRaycastManager>();
+
+        level = GetComponent<Level>();
+        currentBloc = level.inventory.currentItem;
+        placementIndicator = Instantiate(currentBloc.gameObject, new Vector3(), new Quaternion());
+        placementIndicator.GetComponent<Rigidbody>().isKinematic = true;
+        placementIndicator.GetComponent<Rigidbody>().detectCollisions = false;
+
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
+
 
         placementIndicator.SetActive(false);
 
@@ -67,10 +89,10 @@ public class ARInteraction : MonoBehaviour
 
    public void PlacePlank()
     {
-        if (placementPoseIsValid && floorIsPlaced)
+        if (placementPoseIsValid && floorIsPlaced && level.inventory.UseItem())
         {
             placementPose.rotation = placementIndicator.transform.rotation;
-            PlaceObject(ref kaplaToPlace, ref placementPose, true);
+            PlaceObject(ref level.inventory.currentItem.gameObject, ref placementPose, true);
         } else if (!floorIsPlaced)
         {
             PlaceObject(ref floorToPlace, ref floorPose);
@@ -83,34 +105,65 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        switch (interactionMode) {
+        switch(interactionMode)
+        {
             case InteractionMode.Placement:
-                if (floorIsPlaced)
+
+                if (!floorIsPlaced)
+                {
+                    UpdateFloorIndicator();
+                } else
                 {
                     UpdatePlacementIndicator();
-                    if (Input.GetTouch(0).phase == TouchPhase.Moved && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                }
+        
+                if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                {
+                    Touch touch = Input.GetTouch(0);
+                    if (touch.phase == TouchPhase.Began)
+                    {
+                        if(floorIsPlaced)
+                        {
+                            shouldReactToTapEvents = true;
+                        } else
+                        {
+                            PlacePlank();
+                        }
+                    }
+                    if (touch.phase == TouchPhase.Stationary && shouldReactToTapEvents)
+                    {
+                    }
+                    if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && shouldReactToTapEvents)
+                    {
+                        if(!fingerHasMoved)
+                        {
+                            PlacePlank();
+                        }
+                        fingerHasMoved = false;
+                        shouldReactToTapEvents = false;
+               
+                    }
+                    if (touch.phase == TouchPhase.Moved && shouldReactToTapEvents)
                     {
                         float dx = Input.GetTouch(0).deltaPosition.x;
                         float dy = Input.GetTouch(0).deltaPosition.y;
                         // y-axis is UP -> dx for rotation around it.
                         RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
-                    }
-                } else
-                {
-                    UpdateFloorIndicator();
-                }
-                break;
-            case InteractionMode.Slicing:
-                if (objectToSlice != null)
-                {
-                    if (Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
-                    {
-                        objectToSlice.GetComponent<SlicePiece>().Split(slicePostion);
+                        fingerHasMoved = true;
                     }
                 }
                 break;
 
+            case InteractionMode.Slicing:
+                if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                {
+                    Debug.Log("slice");
+                    objectToSlice.GetComponent<SlicePiece>().Split(slicePostion);
+                }
+                break;
         }
+
+        
     }
 
     /*
@@ -118,18 +171,18 @@ public class ARInteraction : MonoBehaviour
     */
      private void FixedUpdate()
     {
-        switch (interactionMode)
+        switch(interactionMode)
         {
             case InteractionMode.Placement:
                 if (floorIsPlaced)
                 {
                     UpdatePlacementPose();
-                }
-                else
+                } else
                 {
                     UpdateFloorPose();
                 }
                 break;
+
             case InteractionMode.Slicing:
                 RaycastHit rayHit;
                 bool hit = RaycastGamePieces(out rayHit);
@@ -174,7 +227,7 @@ public class ARInteraction : MonoBehaviour
 
     private bool RaycastGamePieces(out RaycastHit hit)
     {
-        Vector3 screenCenter  = Camera.current.ViewportToScreenPoint(new Vector3(0.5f, 0.5f));
+        Vector3 screenCenter = Camera.current.ViewportToScreenPoint(new Vector3(0.5f, 0.5f));
         Ray ray = Camera.current.ScreenPointToRay(screenCenter);
         int virtualSceneMask = 1 << 8;
         float maxDistance = 200.0f;
@@ -187,6 +240,28 @@ public class ARInteraction : MonoBehaviour
         }
 
         return false;
+    }
+
+    void switchInteractionMode(InteractionMode mode)
+    {
+        switch(mode)
+        {
+            case InteractionMode.Slicing:
+                interactionMode = InteractionMode.Slicing;
+                placementIndicator.SetActive(false);
+                break;
+            case InteractionMode.Placement:
+                interactionMode = InteractionMode.Placement;
+                placementIndicator.SetActive(true);
+                break;
+        }
+    }
+
+    public void switchInteractionMode()
+    {
+        InteractionMode[] interactionModes =(InteractionMode[]) Enum.GetValues(interactionMode.GetType());
+        int j = Array.IndexOf(interactionModes, interactionMode) + 1;
+        switchInteractionMode(interactionModes[j%interactionModes.Length]);
     }
 
     void RotatePlacementIndicator()
@@ -247,8 +322,17 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementIndicator()
     {
+        if(level.inventory.currentItem != currentBloc)
+        {
+            Destroy(placementIndicator);
+            currentBloc = level.inventory.currentItem;
+            placementIndicator = Instantiate(currentBloc.gameObject, new Vector3(), new Quaternion());
+            placementIndicator.GetComponent<Rigidbody>().isKinematic = true;
+            placementIndicator.GetComponent<Rigidbody>().detectCollisions = false;
+        }
+
         placementIndicator.transform.position = placementPose.position;
-        if (placementPoseIsValid)
+        if (placementPoseIsValid && level.inventory.inventory[currentBloc] > 0)
         {
             placementIndicator.GetComponentInChildren<MeshRenderer>().material = validPlacementMaterial;
         }
@@ -288,7 +372,7 @@ public class ARInteraction : MonoBehaviour
         placementPose.position = Camera.current.transform.position + 25.0f * Camera.current.transform.forward;
         placementPose.rotation = placementIndicator.transform.rotation;
         int virtualSceneMask = 1 << 8;
-        Collider[] hitColliders = Physics.OverlapBox(placementPose.position, kaplaToPlace.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
+        Collider[] hitColliders = Physics.OverlapBox(placementPose.position, level.inventory.currentItem.gameObject.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
         if (hitColliders.Length == 0)
             placementPoseIsValid = true;
         else

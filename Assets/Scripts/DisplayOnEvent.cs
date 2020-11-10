@@ -5,7 +5,8 @@ using UnityEngine.UI;
 
 public class DisplayOnEvent : MonoBehaviour
 {
-
+    int currentInteractionMode = 0;
+    static string[] modes = { "Place", "Slice" };
 
     // Start is called before the first frame update
     void Start()
@@ -17,6 +18,11 @@ public class DisplayOnEvent : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public void ChangeInteractionMode()
+    {
+        transform.Find("Change Mode").Find("Mode").GetComponent<Text>().text = modes[++currentInteractionMode%modes.Length];
     }
 
     private void OnEnable()

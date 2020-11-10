@@ -1,4 +1,4 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
 Shader "Unlit/SimpleUnlitTexturedShader"
 {
@@ -10,7 +10,7 @@ Shader "Unlit/SimpleUnlitTexturedShader"
     _AnimTimeStart("Animation Time Start", Float) = 0
       _AnimTimeEnd("Animation Time End", Float) = 0
     _Color("Color (RGBA)", Color) = (1, 1, 1, 1)
-      
+
   }
     SubShader
   {
@@ -62,7 +62,7 @@ Shader "Unlit/SimpleUnlitTexturedShader"
   fixed4 frag(v2f i) : SV_Target
   {
     float2 tex = i.uv;
-    tex.x += _Time.x*60;
+    tex.x += _Time.x*60.0f;
     // sample texture and return it
     float4 col = float4(0.0f, 0.0f, 0.0f, 1.0f);
     float pi = 3.1415;
@@ -85,4 +85,4 @@ Shader "Unlit/SimpleUnlitTexturedShader"
 ENDCG
 }
   }
-}
+} 

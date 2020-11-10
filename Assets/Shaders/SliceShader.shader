@@ -62,7 +62,7 @@ Shader "Unlit/SimpleUnlitTexturedShader"
   fixed4 frag(v2f i) : SV_Target
   {
     float2 tex = i.uv;
-    tex.x += _Time.x*60.0f;
+    tex.x += _Time.x*60;
     // sample texture and return it
     float4 col = float4(0.0f, 0.0f, 0.0f, 1.0f);
     float pi = 3.1415;

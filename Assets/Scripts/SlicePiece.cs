@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class SlicePiece : MonoBehaviour
 {
@@ -14,6 +15,106 @@ public class SlicePiece : MonoBehaviour
     void Start()
     {
 
+    }
+
+    bool mouseHit = false;
+    RaycastHit mouseRayHit;
+
+    private void FixedUpdate()
+    {
+
+    }
+
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("Raycast!");
+            mouseHit = MouseRaycastGamePieces(out mouseRayHit);
+        }
+        if (mouseHit)
+        {
+            Debug.Log("Plane split! " + Time.realtimeSinceStartup);
+            PlaneSplit();
+            mouseHit = false;
+        }
+    }
+    private bool MouseRaycastGamePieces(out RaycastHit hit)
+    {
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        int virtualSceneMask = 1 << 8;
+        float maxDistance = 200.0f;
+        if (Physics.Raycast(ray, out hit, maxDistance, virtualSceneMask))
+        {
+            if (hit.collider.gameObject.CompareTag("Game Piece"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public GameObject plane;
+    public void PlaneSplit()
+    {
+       // GameObject clone = Instantiate(this.gameObject);
+        Mesh m_this = this.gameObject.GetComponent<MeshFilter>().mesh;
+        MeshCollider mc_this = this.gameObject.GetComponent<MeshCollider>();
+
+        // MeshFilter mf_clone = clone.transform.Find("Cube").GetComponent<MeshFilter>();
+
+        Vector3 plane_normal = this.gameObject.transform.InverseTransformDirection(plane.transform.up);
+        Vector3 plane_pos = this.gameObject.transform.InverseTransformPoint(plane.transform.position);
+        Vector3[] vertices = m_this.vertices;
+        Debug.Log("plane pos = " + plane_pos);
+        Debug.Log("plane normal = " + plane_normal);
+        for (var i = 0; i < vertices.Length; i++)
+        {
+
+            // Check if hit point is in bounds of our mesh
+            // +
+            // Create vector from plane to vertex
+            // Check what side of plane
+            Vector3 pv = vertices[i] - plane_pos;
+           // Debug.Log("i = " + i + " v[i] = " + vertices[i]);
+           // Debug.Log("i = " + i + " pv = " + pv);
+           // Debug.Log("i = " + i + " " + Vector3.Dot(plane_normal, pv));
+            if (Vector3.Dot(plane_normal, pv) <= 0.0f)
+            {
+              //  if 
+                // On the remove side of the plane: check where to move the vertex by raycasting
+                RaycastHit testHit;
+                // need to be in world space
+                Ray ray = new Ray();
+                ray.direction = -this.gameObject.transform.right;
+                ray.origin = this.gameObject.transform.TransformPoint(vertices[i]);
+                int slicePlaneMask = 1 << 9;
+                Physics.Raycast(ray, out testHit, 200, slicePlaneMask);
+                // check if the hit is inside our mesh 
+                // Create tiny sphere collider att intersection point and check if it is inside the mesh collider
+                int numColliders = 5; // 1 should be enough
+                Collider[] hitColliders = new Collider[numColliders];
+                int nCols = Physics.OverlapSphereNonAlloc(testHit.point, 0.01f, hitColliders, 1 << 8);
+                bool insideMesh = false;
+                
+                if (nCols == 1)
+                {
+                    insideMesh = hitColliders[0].gameObject.Equals(this.gameObject);
+                } else
+                {
+                    Debug.Log("nCols = " + nCols);
+                }
+                if (insideMesh)
+                {
+                    vertices[i] = this.transform.InverseTransformPoint(testHit.point);
+                } else { }
+            }
+        }
+        mc_this.sharedMesh = null;
+        m_this.vertices = vertices;
+        m_this.RecalculateBounds();
+        mc_this.sharedMesh = m_this;
     }
 
     /*
@@ -61,12 +162,7 @@ public class SlicePiece : MonoBehaviour
          rbClone.AddForce(d * 1.0f, ForceMode.Impulse);
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
+ 
 
 
     public void UpdateSliceIndicator(Vector3 p)

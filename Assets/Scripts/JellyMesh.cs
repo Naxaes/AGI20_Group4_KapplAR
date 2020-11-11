@@ -3,10 +3,10 @@
 
 public class JellyMesh : MonoBehaviour
 {
-    public float intensity = 1f;
-    public float mass = 1f;
-    public float stiffness = 1f;
-    public float damping = 0.75f;
+    public float intensity  = 1f;
+    public float mass       = 1f;
+    public float stiffness  = 1f;
+    public float damping    = 0.75f;
 
     private Mesh originalMesh;
     private Mesh clonedMesh;
@@ -22,7 +22,7 @@ public class JellyMesh : MonoBehaviour
         renderer = GetComponent<MeshRenderer>();
 
         originalMesh = mesh.sharedMesh;
-        clonedMesh = Instantiate(originalMesh);
+        clonedMesh   = Instantiate(originalMesh);
         mesh.sharedMesh = clonedMesh;
 
         Vector3[] vertices = originalMesh.vertices;

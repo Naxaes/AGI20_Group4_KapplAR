@@ -44,8 +44,8 @@ public class ARInteraction : MonoBehaviour
     private GameObject objectToSlice = null;
     private Vector3 slicePostion;
 
-    bool fingerHasMoved = false;
     bool shouldReactToTapEvents = false;
+    float timeStationary = 0.0f;
 
 
     // Start is called before the first frame update
@@ -87,6 +87,7 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        timeStationary += Time.deltaTime;
         switch(interactionMode)
         {
             case InteractionMode.Placement:
@@ -107,6 +108,7 @@ public class ARInteraction : MonoBehaviour
                         if(floorIsPlaced)
                         {
                             shouldReactToTapEvents = true;
+                            timeStationary = 0.0f;
                         } else
                         {
                             PlacePlank();
@@ -114,14 +116,15 @@ public class ARInteraction : MonoBehaviour
                     }
                     if (touch.phase == TouchPhase.Stationary && shouldReactToTapEvents)
                     {
+                        // Do nothing
                     }
                     if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && shouldReactToTapEvents)
                     {
-                        if(!fingerHasMoved)
+                        // timeStationary differentiaties between a "tap" for placement and rotation
+                        if(timeStationary <= 0.3f)
                         {
                             PlacePlank();
                         }
-                        fingerHasMoved = false;
                         shouldReactToTapEvents = false;
                
                     }
@@ -131,7 +134,6 @@ public class ARInteraction : MonoBehaviour
                         float dy = Input.GetTouch(0).deltaPosition.y;
                         // y-axis is UP -> dx for rotation around it.
                         RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
-                        fingerHasMoved = true;
                     }
                 }
                 break;

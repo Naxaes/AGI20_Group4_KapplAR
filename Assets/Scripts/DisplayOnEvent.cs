@@ -22,7 +22,7 @@ public class DisplayOnEvent : MonoBehaviour
 
     public void ChangeInteractionMode()
     {
-        transform.Find("Change Mode").Find("Mode").GetComponent<Text>().text = modes[++currentInteractionMode%modes.Length];
+        transform.Find("Change Mode").Find("Mode").GetComponent<Text>().text = modes[++currentInteractionMode % modes.Length];
     }
 
     private void OnEnable()

@@ -13,6 +13,7 @@ public class Level1 : Level
     // Start is called before the first frame update
     void Awake()
     {
+        LevelName = "Level 1";
         inventory = new Inventory();
         inventory.AddItem(new WoodBloc(), 100);
         inventory.AddItem(new JellyBloc(), 5);

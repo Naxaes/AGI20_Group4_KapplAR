@@ -13,7 +13,7 @@ public class LightEstimation : MonoBehaviour
     private ARCameraManager arCameraManager;
 
 
-    Light light;
+    Light mainLight;
 
     public float? brightness { get;  set; }
 
@@ -36,7 +36,7 @@ public class LightEstimation : MonoBehaviour
 
     void Awake()
     {
-        light = GetComponent<Light>();
+        mainLight = GetComponent<Light>();
     }
 
 
@@ -58,18 +58,19 @@ public class LightEstimation : MonoBehaviour
         if (obj.lightEstimation.averageBrightness.HasValue)
         {
             brightness = obj.lightEstimation.averageBrightness.Value;
-            light.intensity = brightness.Value;
+            mainLight.intensity = brightness.Value;
         }
+
         if (obj.lightEstimation.averageColorTemperature.HasValue)
         {
             colorTemperature = obj.lightEstimation.averageColorTemperature.Value;
-            light.colorTemperature = colorTemperature.Value;
+            mainLight.colorTemperature = colorTemperature.Value;
         }
 
         if (obj.lightEstimation.colorCorrection.HasValue)
         {
             colorCorrection = obj.lightEstimation.colorCorrection.Value;
-            light.color = colorCorrection.Value;
+            mainLight.color = colorCorrection.Value;
         }
 
         /*

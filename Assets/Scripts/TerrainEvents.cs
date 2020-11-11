@@ -9,7 +9,9 @@ public class TerrainEvents : MonoBehaviour
     GameObject gameFloor;
     // Start is called before the first frame update
     void Start()
-    {}
+    {
+        InvokeRepeating("StartEarthquake", 10.0f, 20.0f);
+    }
 
     // Update is called once per frame
     void Update()
@@ -33,7 +35,7 @@ public class TerrainEvents : MonoBehaviour
         Vector3 initialGamefloorPosition = gameFloor.transform.position;
         for (float t = 0f; t < duration; t += Time.deltaTime)
         {
-            Vector3 transformation = Random.onUnitSphere * 0.1f;
+            Vector3 transformation = Random.onUnitSphere * 0.15f;
             gameFloor.transform.position = (initialGamefloorPosition + transformation);
 
             yield return null;

@@ -154,13 +154,13 @@ public class ARInteraction : MonoBehaviour
                         if (Math.Abs(moveDistanceX) >= 5)
                         {
                             moveDistanceX %= 5;
-                            Vibration.VibratePop();
+                          // Vibration.VibratePop();
                             
                             RotateInstant(new Vector3(Math.Sign(moveDistanceX) * 5f, 0f , 0f));
                         }
-                        if (Math.Abs(moveDistanceY) >= 10)
+                        if (Math.Abs(moveDistanceY) >= 20)
                         {
-                            moveDistanceY %= 10;
+                            moveDistanceY %= 20;
                             Vibration.VibratePop();
                             RotateInstant(new Vector3(0f,Math.Sign(moveDistanceY) * 90f, 0f));
                         }

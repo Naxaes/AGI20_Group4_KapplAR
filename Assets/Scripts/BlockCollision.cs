@@ -5,6 +5,8 @@ using UnityEngine;
 public class BlockCollision : MonoBehaviour
 {
     // Start is called before the first frame update
+    float collisionTimer = 3.0f;
+    bool activateTimer = false;
     void Start()
     {
         
@@ -13,7 +15,15 @@ public class BlockCollision : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (activateTimer)
+        {
+            collisionTimer -= Time.deltaTime;
+        }
+        if (collisionTimer <= 0.0f)
+        {
+            collisionTimer = 3.0f;
+            activateTimer = false;
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -21,6 +31,7 @@ public class BlockCollision : MonoBehaviour
         //Debug.Log("collision: " + collision.gameObject.tag+" "+ collision.gameObject.name);
         if (collision.gameObject.CompareTag("Game Piece"))
         {
+            activateTimer = true;
             Vibration.VibratePop();
         }
     }

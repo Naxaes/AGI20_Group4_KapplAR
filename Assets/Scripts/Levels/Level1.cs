@@ -17,6 +17,7 @@ public class Level1 : Level
         inventory = new Inventory();
         inventory.AddItem(new WoodBloc(), 100);
         inventory.AddItem(new JellyBloc(), 5);
+        QualitySettings.pixelLightCount = 2;
     }
 
     // Update is called once per frame

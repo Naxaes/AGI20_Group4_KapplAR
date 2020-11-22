@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7956592507434327824}
   - component: {fileID: -2463560431886852640}
   - component: {fileID: -761106191772930960}
+  - component: {fileID: 1788154767873388106}
   m_Layer: 8
   m_Name: Game Piece
   m_TagString: Game Piece
@@ -105,6 +106,18 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1788154767873388106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1516993344151117300}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1983fed3203b662418c802d26acdb2f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &422442318756490959
 PrefabInstance:
   m_ObjectHideFlags: 0

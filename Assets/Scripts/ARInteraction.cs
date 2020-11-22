@@ -45,7 +45,12 @@ public class ARInteraction : MonoBehaviour
     private Vector3 slicePostion;
 
     bool shouldReactToTapEvents = false;
-    float timeStationary = 0.0f;
+    readonly float moveTreshold = 5;
+    float moveDistanceTotal;
+    float moveDistanceX;
+    float moveDistanceY;
+
+    Quaternion lastCameraPosition;
 
 
     // Start is called before the first frame update
@@ -62,6 +67,7 @@ public class ARInteraction : MonoBehaviour
         placementPose.rotation = placementIndicator.transform.rotation;
         floorPose.rotation = floorPlacementIndicator.transform.rotation;
 
+        lastCameraPosition = Camera.current.transform.rotation;
 
         placementIndicator.SetActive(false);
 
@@ -69,13 +75,14 @@ public class ARInteraction : MonoBehaviour
         UpdateFloorIndicator();
     }
 
-   public void PlacePlank()
+    public void PlacePlank()
     {
         if (placementPoseIsValid && floorIsPlaced && level.inventory.UseItem())
         {
             placementPose.rotation = placementIndicator.transform.rotation;
             PlaceObject(ref level.inventory.currentItem.gameObject, ref placementPose, true);
-        } else if (!floorIsPlaced)
+        }
+        else if (!floorIsPlaced)
         {
             PlaceObject(ref floorToPlace, ref floorPose);
             floorIsPlaced = true;
@@ -87,29 +94,37 @@ public class ARInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        timeStationary += Time.deltaTime;
-        switch(interactionMode)
+        //float rotationY = Quaternion.RotateTowards(lastCameraPosition, Camera.current.transform.rotation,360).eulerAngles.y;
+        float rotationY = (Camera.current.transform.rotation.eulerAngles.y - lastCameraPosition.eulerAngles.y) % 360;
+        placementIndicator.transform.Rotate(0f, rotationY, 0f, Space.World);
+        lastCameraPosition = Camera.current.transform.rotation;
+
+        switch (interactionMode)
         {
             case InteractionMode.Placement:
 
                 if (!floorIsPlaced)
                 {
                     UpdateFloorIndicator();
-                } else
+                }
+                else
                 {
                     UpdatePlacementIndicator();
                 }
-        
+
                 if (Input.touchCount > 0 && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
                 {
                     Touch touch = Input.GetTouch(0);
                     if (touch.phase == TouchPhase.Began)
                     {
-                        if(floorIsPlaced)
+                        if (floorIsPlaced)
                         {
                             shouldReactToTapEvents = true;
-                            timeStationary = 0.0f;
-                        } else
+                            moveDistanceX = 0;
+                            moveDistanceY = 0;
+                            moveDistanceTotal = 0;
+                        }
+                        else
                         {
                             PlacePlank();
                         }
@@ -121,19 +136,35 @@ public class ARInteraction : MonoBehaviour
                     if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && shouldReactToTapEvents)
                     {
                         // timeStationary differentiaties between a "tap" for placement and rotation
-                        if(timeStationary <= 0.3f)
+                        if (moveDistanceTotal <= moveTreshold)
                         {
                             PlacePlank();
                         }
                         shouldReactToTapEvents = false;
-               
+
                     }
                     if (touch.phase == TouchPhase.Moved && shouldReactToTapEvents)
                     {
-                        float dx = Input.GetTouch(0).deltaPosition.x;
-                        float dy = Input.GetTouch(0).deltaPosition.y;
+
+                        float dx = Input.GetTouch(0).deltaPosition.x / Screen.width * 360;
+                        float dy = Input.GetTouch(0).deltaPosition.y / Screen.height * 360;
+                        moveDistanceX += dx;
+                        moveDistanceY += dy;
+                        moveDistanceTotal += Input.GetTouch(0).deltaPosition.magnitude;
+                        if (Math.Abs(moveDistanceX) >= 5)
+                        {
+                            moveDistanceX %= 5;
+                            Vibration.VibratePop();
+                            
+                            RotateInstant(new Vector3(Math.Sign(moveDistanceX) * 5f, 0f , 0f));
+                        }
+                        if (Math.Abs(moveDistanceY) >= 10)
+                        {
+                            moveDistanceY %= 10;
+                            Vibration.VibratePop();
+                            RotateInstant(new Vector3(0f,Math.Sign(moveDistanceY) * 90f, 0f));
+                        }
                         // y-axis is UP -> dx for rotation around it.
-                        RotateInstant(new Vector3(dy / 3.0f, dx / 3.0f, 0f));
                     }
                 }
                 break;
@@ -141,27 +172,27 @@ public class ARInteraction : MonoBehaviour
             case InteractionMode.Slicing:
                 if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
                 {
-                    Debug.Log("slice");
                     objectToSlice.GetComponent<SlicePiece>().Split(slicePostion);
                 }
                 break;
         }
 
-        
+
     }
 
     /*
     * Physics engine related updates
     */
-     private void FixedUpdate()
+    private void FixedUpdate()
     {
-        switch(interactionMode)
+        switch (interactionMode)
         {
             case InteractionMode.Placement:
                 if (floorIsPlaced)
                 {
                     UpdatePlacementPose();
-                } else
+                }
+                else
                 {
                     UpdateFloorPose();
                 }
@@ -228,7 +259,7 @@ public class ARInteraction : MonoBehaviour
 
     void switchInteractionMode(InteractionMode mode)
     {
-        switch(mode)
+        switch (mode)
         {
             case InteractionMode.Slicing:
                 interactionMode = InteractionMode.Slicing;
@@ -243,9 +274,9 @@ public class ARInteraction : MonoBehaviour
 
     public void switchInteractionMode()
     {
-        InteractionMode[] interactionModes =(InteractionMode[]) Enum.GetValues(interactionMode.GetType());
+        InteractionMode[] interactionModes = (InteractionMode[])Enum.GetValues(interactionMode.GetType());
         int j = Array.IndexOf(interactionModes, interactionMode) + 1;
-        switchInteractionMode(interactionModes[j%interactionModes.Length]);
+        switchInteractionMode(interactionModes[j % interactionModes.Length]);
     }
 
     void RotatePlacementIndicator()
@@ -258,13 +289,9 @@ public class ARInteraction : MonoBehaviour
 
     void RotateInstant(Vector3 angles)
     {
-        Quaternion startRotation = placementIndicator.transform.localRotation;
-        Quaternion endRotation;
-        // Rotate around the camera axis.
-        endRotation = Quaternion.AngleAxis(angles.y, Camera.current.transform.up) * startRotation;
-        endRotation = Quaternion.AngleAxis(angles.x, Camera.current.transform.right) * endRotation;
-
-        placementIndicator.transform.rotation = endRotation;
+        // placementIndicator.transform.rotation *= Quaternion.AngleAxis(angles.x, Vector3.Cross(Camera.current.transform.forward, transform.up));
+        //Rotation
+        placementIndicator.transform.Rotate(angles.y, 0f, angles.x, Space.Self);
     }
 
 
@@ -285,7 +312,8 @@ public class ARInteraction : MonoBehaviour
         {
             GameObject newPiece = Instantiate(gameObject, pose.position, pose.rotation);
             newPiece.transform.SetParent(GameObject.Find("GamePieces").transform);
-        } else
+        }
+        else
         {
             Instantiate(gameObject, pose.position, pose.rotation);
         }
@@ -306,7 +334,7 @@ public class ARInteraction : MonoBehaviour
 
     private void UpdatePlacementIndicator()
     {
-        if(level.inventory.currentItem != currentBloc)
+        if (level.inventory.currentItem != currentBloc)
         {
             Destroy(placementIndicator);
             currentBloc = level.inventory.currentItem;
@@ -355,7 +383,14 @@ public class ARInteraction : MonoBehaviour
     {
 
         placementPose.position = Camera.current.transform.position + 25.0f * Camera.current.transform.forward;
+
+        float rotationY = (Camera.current.transform.rotation.eulerAngles.y - placementIndicator.transform.rotation.eulerAngles.y) % 360;
+
+
+        //placementIndicator.transform.Rotate(0f, rotationY, 0f, Space.World);
+
         placementPose.rotation = placementIndicator.transform.rotation;
+
         int virtualSceneMask = 1 << 8;
         Collider[] hitColliders = Physics.OverlapBox(placementPose.position, level.inventory.currentItem.gameObject.transform.localScale / 2.0f, placementPose.rotation, virtualSceneMask);
         if (hitColliders.Length == 0)

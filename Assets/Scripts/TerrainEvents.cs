@@ -58,26 +58,5 @@ public class TerrainEvents : MonoBehaviour
         yield break;
     }
 
-    public void StartWind()
-    {
-        Rigidbody[] gamePiecesRb = GameObject.FindGameObjectsWithTag("Game Piece").Select(x => x.GetComponent<Rigidbody>()).ToArray();
-        StartCoroutine(WindCoroutine(gamePiecesRb));
-    }
-
-    IEnumerator WindCoroutine(Rigidbody [] gamePiecesRb)
-    {
-        const float duration = 5f;
-        Debug.Log(gamePiecesRb.Length);
-        for (float t = 0f; t < duration; t += Time.deltaTime)
-        {
-            foreach (Rigidbody gamePieceRb in gamePiecesRb)
-            {
-                Debug.Log(gamePieceRb);
-                gamePieceRb.AddForce(new Vector3(0f, 0f, 10000f), new ForceMode());
-
-                yield return null;
-            }
-        }
-        yield break;
-    }
+    
 }

@@ -12,10 +12,18 @@ using UnityEngine;
 
 namespace KaplaCSG
 {
+    public enum PlaneConfig
+    {
+        On,
+        Left, // positive dot
+        Right // Negative dot
+    }
+
     public class HEVertex
     {
         public Vector3 v;
-        public short heIndex = -1;// On of the half-edges emantating from the vertex
+        public short heIndex = -1;// One of the half-edges emantating from the vertex
+        public PlaneConfig config;
     }
 
     public class HEFace
@@ -227,8 +235,7 @@ namespace KaplaCSG
                     // add the face index
                     l.Add(i0);
                     edgeMap.Add(sum, l);
-                }
-                else
+                } else
                 {
                     edgeMap[sum].Add(i0);
                 }
@@ -271,12 +278,10 @@ namespace KaplaCSG
                     edgeMap[sum].Add(i2);
                 }
             }
-
             // Fill the opposite entries
             for (int i = 0; i < meshTriangles.Length; i += 3)
             {
                 // each edge is shared between exactly two faces 
-
                 // Stored 3-by-3 indices. e.g. 0,1,2 forms the first triangle.
                 short i0 = (short)i;
                 short i1 = (short)(i + 1);
@@ -337,6 +342,7 @@ namespace KaplaCSG
         }
         // Reacreate a unity mesh with vertices, triangles, and normals.
         // TODO: IT NOW ASSUMES A FACE IS A TRIANGLE
+        // TODO: FAN TRIANGULATION? Can we assume that all generated faces will be simple convex??
         public static Mesh CreateMeshFromHalfEdge(List<HEFace> faces, List<HEVertex> vertices, List<HalfEdge> halfEdges)
         {
             Mesh meshRes = new Mesh();
@@ -347,19 +353,18 @@ namespace KaplaCSG
             int triIdx = 0;
             foreach (HEFace face in faces)
             {
-                Debug.Log("face!");
                 // Each face has a normal and an index into halfEdges
                 // Get the face halfedges
                 List<short> faceHalfEdges = HalfEdge.FaceHalfEdges(face, halfEdges);
                 if (faceHalfEdges.Count != 3)
                 {
                     Debug.Log("Face contains = " + faceHalfEdges.Count);
-
+                    Debug.Assert(faceHalfEdges.Count == 3);
                 }
                 foreach (short i in faceHalfEdges)
                 {
                     meshVertices.Add(vertices[halfEdges[i].verIndex].v);
-                    Debug.Log(vertices[halfEdges[i].verIndex].v);
+                //    Debug.Log(vertices[halfEdges[i].verIndex].v);
                     meshNormals.Add(face.normal);
                     meshTriangles.Add(triIdx);
                     triIdx++;

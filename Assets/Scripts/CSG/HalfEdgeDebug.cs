@@ -89,7 +89,12 @@ public class HalfEdgeDebug : MonoBehaviour
 
         heMesh.Triangulate();
         // TODO:
-        // Split in two and triangulate the cap!
+        // Split in two and triangulate the cap! Probably triangulate the cap first then:
+        // Mesh A: Left + ON vertices. Left is any face with ATLEAST one LEFT vertex.
+        // Mesh B: Right + ON 
+        HalfEdgeMesh rightMesh = new HalfEdgeMesh();
+        HalfEdgeMesh leftMesh = new HalfEdgeMesh();
+        heMesh.SplitInLeftAndRightMesh(leftMesh, rightMesh);
 
          mf.mesh = heMesh.GetMesh();
         //  mf.mesh = HalfEdge.CreateMeshFromHalfEdge(faces, vertices, halfEdges);

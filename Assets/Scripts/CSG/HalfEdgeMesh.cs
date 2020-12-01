@@ -14,6 +14,11 @@ public class HalfEdgeMesh
         CreateStructureFromMesh(mesh);
     }
 
+    public HalfEdgeMesh()
+    {
+
+    }
+
     public void CreateStructureFromMesh(Mesh mesh)
     {
         int[] meshTriangles = mesh.triangles;
@@ -301,6 +306,132 @@ public class HalfEdgeMesh
             }
 
         }
+    }
+
+    // Every face should be a triangle! So call Triangulate first
+    public void SplitInLeftAndRightMesh(HalfEdgeMesh left, HalfEdgeMesh right)
+    {
+        // Have to re-index everything :(
+        Dictionary<Vector3, short> leftVertDict = new Dictionary<Vector3, short>();
+        Dictionary<Vector3, short> rightVertDict = new Dictionary<Vector3, short>();
+
+        // First add the vertices, and get their indices
+        short lVertIdx = 0;
+        short rVertIdx = 0;
+        foreach (HEVertex v in vertices)
+        {
+            HEVertex newVL = new HEVertex { v = v.v };
+            HEVertex newVR = new HEVertex { v = v.v };
+            if (v.config == PlaneConfig.Left && !leftVertDict.ContainsKey(v.v))
+            {
+                leftVertDict.Add(v.v, lVertIdx);
+                left.vertices.Add(newVL);
+                lVertIdx++;
+            } else if (v.config == PlaneConfig.Right && !rightVertDict.ContainsKey(v.v))
+            {
+                rightVertDict.Add(v.v, rVertIdx);
+                right.vertices.Add(newVR);
+                rVertIdx++;
+            } else
+            {
+                if (!leftVertDict.ContainsKey(v.v))
+                {
+                    leftVertDict.Add(v.v, lVertIdx);
+                    left.vertices.Add(newVL);
+                    lVertIdx++;
+                }
+                if (!rightVertDict.ContainsKey(v.v))
+                {
+                    rightVertDict.Add(v.v, rVertIdx);
+                    right.vertices.Add(newVR);
+                    rVertIdx++;
+                }
+            }
+        }
+        // The dicts should map old idx -> new idx...
+        Dictionary<short, short> leftEdgeIdxMap = new Dictionary<short, short>();
+        Dictionary<short, short> rightEdgeIdxMap = new Dictionary<short, short>();
+        Dictionary<short, short> leftFaceIdxMap = new Dictionary<short, short>();
+        Dictionary<short, short> rightFaceIdxMap = new Dictionary<short, short>();
+
+        // Build the idx maps
+        foreach (HalfEdge h in halfEdges)
+        {
+            short lEdgeIdx = 0;
+            short lFaceIdx = 0;
+            short rEdgeIdx = 0;
+            short rFaceIdx = 0;
+            PlaneConfig pConfig = GetFaceConfig(faces[h.faceIndex]);
+            if (pConfig == PlaneConfig.Left)
+            {
+                leftEdgeIdxMap.Add(h.index, lEdgeIdx);
+                left.halfEdges.Add(h);
+                lEdgeIdx++;
+                if (!leftFaceIdxMap.ContainsKey(h.faceIndex))
+                {
+                    left.faces.Add(faces[h.faceIndex]);
+                    left.faces[lFaceIdx].heIndex = (short)(lEdgeIdx - 1);
+                    leftFaceIdxMap.Add(h.faceIndex, lFaceIdx);
+                    lFaceIdx++;
+                }
+            } else if (pConfig == PlaneConfig.Right)
+            {
+                rightEdgeIdxMap.Add(h.index, rEdgeIdx);
+                right.halfEdges.Add(h);
+                rEdgeIdx++;
+                if (!rightFaceIdxMap.ContainsKey(h.faceIndex))
+                {
+                    right.faces.Add(faces[h.faceIndex]);
+                    right.faces[rFaceIdx].heIndex = (short)(rEdgeIdx - 1); 
+                    rightFaceIdxMap.Add(h.faceIndex, rFaceIdx);
+                    rFaceIdx++;
+                }
+            } else // On, not possible for a face?
+            {
+                // ...
+            }
+        }
+        // Update all the indices and stuff
+        // Edge case is if both vertices are ON the plane, then they don't have an opposite edge
+        // I think I will leave it and deal with it when triangulating the cap
+        foreach (KeyValuePair<short, short> kvp in leftEdgeIdxMap)
+        {
+            // The edge
+            left.halfEdges[kvp.Value].index = kvp.Value;
+            left.halfEdges[kvp.Value].faceIndex = leftFaceIdxMap[kvp.Key];
+            left.halfEdges[kvp.Value].nextIndex = leftEdgeIdxMap[halfEdges[kvp.Key].nextIndex];
+            left.halfEdges[kvp.Value].verIndex = leftVertDict[vertices[halfEdges[kvp.Key].verIndex].v];
+            // face done in loop above
+
+            // Update vertices edge index, doesn't matter if we overwrite
+            left.vertices[left.halfEdges[kvp.Value].verIndex].heIndex = kvp.Value;
+        }
+        foreach (KeyValuePair<short, short> kvp in rightEdgeIdxMap)
+        {
+            // The edge
+            right.halfEdges[kvp.Value].index = kvp.Value;
+            right.halfEdges[kvp.Value].faceIndex = rightFaceIdxMap[kvp.Key];
+            right.halfEdges[kvp.Value].nextIndex = rightEdgeIdxMap[halfEdges[kvp.Key].nextIndex];
+            right.halfEdges[kvp.Value].verIndex = rightVertDict[vertices[halfEdges[kvp.Key].verIndex].v];
+            // face done in loop above
+
+            // Update vertices edge index, doesn't matter if we overwrite
+            right.vertices[right.halfEdges[kvp.Value].verIndex].heIndex = kvp.Value;
+        }
+    }
+
+    private PlaneConfig GetFaceConfig(HEFace face)
+    {
+        // If any vertex is left / right the whole face is it
+        List<short> heIdx = HalfEdge.FaceHalfEdges(face, halfEdges);
+        foreach (short s in heIdx)
+        {
+            if (vertices[halfEdges[s].verIndex].config == PlaneConfig.Left)
+                return PlaneConfig.Left;
+            else if (vertices[halfEdges[s].verIndex].config == PlaneConfig.Right)
+                return PlaneConfig.Right;
+        }
+        return PlaneConfig.On;
     }
 
     // h0 and h1 are halfedges in face.

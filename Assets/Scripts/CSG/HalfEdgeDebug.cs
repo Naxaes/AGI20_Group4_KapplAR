@@ -6,21 +6,18 @@ using KaplaCSG;
 public class HalfEdgeDebug : MonoBehaviour
 {
     List<Vector3> iPoints = new List<Vector3>();
-    // Start is called before the first frame update
-    void Start()
+    public MeshFilter meshFilter;
+    Mesh mesh;
+    public HalfEdgeMesh heMesh;
+
+    public void InitHalfEdgeMesh()
     {
-        // Get the mesh
-        MeshFilter mf = this.gameObject.GetComponent<MeshFilter>();
-        Mesh m = mf.mesh;
+        heMesh = new HalfEdgeMesh(mesh);
+    }
 
-
-        // Build the HalfEdge data structure from the mesh!
-        //HalfEdge.CreateStructureFromMesh(m, halfEdges, faces, vertices);
-        HalfEdgeMesh heMesh = new HalfEdgeMesh(m);
-        
-        // Lets try to cut it with a plane, then draw the gizmos of the intersection points
+    public void CutWithPlane(Plane plane)
+    {
         bool[] visited = new bool[heMesh.halfEdges.Count];
-        Plane plane = new Plane(new Vector3(1.0f, 2.0f, 0.0f).normalized, new Vector3(0.0f, 0.0f, 0.0f));
         List<HalfEdge> newHalfEdges = new List<HalfEdge>();
         int s = heMesh.halfEdges.Count;
         for (int i = 0; i < s; i++)
@@ -42,45 +39,47 @@ public class HalfEdgeDebug : MonoBehaviour
             Vector3 c1 = v1 - plane.point;
             float c0_dot = Vector3.Dot(c0, plane.normal);
             float c1_dot = Vector3.Dot(c1, plane.normal);
-            if (Mathf.Abs(c0_dot) < 0.00001f)
+            float eps = 0.000001f;
+            if (Mathf.Abs(c0_dot) < eps)
             {
                 heMesh.vertices[he.verIndex].config = PlaneConfig.On;
-            } else if (c0_dot <= -0.00001f)
+            }
+            else if (c0_dot <= -eps)
             {
                 heMesh.vertices[he.verIndex].config = PlaneConfig.Right;
             }
-            else if (c0_dot >= 0.00001f)
+            else if (c0_dot >= eps)
             {
                 heMesh.vertices[he.verIndex].config = PlaneConfig.Left;
             }
-            if (Mathf.Abs(c1_dot) < 0.00001f)
+            if (Mathf.Abs(c1_dot) < eps)
             {
                 heMesh.vertices[heOpp.verIndex].config = PlaneConfig.On;
             }
-            else if (c1_dot <= -0.00001f)
+            else if (c1_dot <= -eps)
             {
                 heMesh.vertices[heOpp.verIndex].config = PlaneConfig.Right;
             }
-            else if (c1_dot >= 0.00001f)
+            else if (c1_dot >= eps)
             {
                 heMesh.vertices[heOpp.verIndex].config = PlaneConfig.Left;
             }
 
             float t;
             Vector3 iPoint = Plane.LinePlaneIntersect(plane, v0, v1, out t);
-            if (t > 1.0f - 0.00001f|| t < 0.0f + 0.00001f)
+            if (t > 1.0f - eps || t < 0.0f + eps)
             {
                 // No intersection on line segment OR parallel with plane
                 continue;
             }
-            Debug.Log(t); 
+            Debug.Log(t);
             // add new intersection vertex to half-edge structure
             HEVertex iVert = new HEVertex();
             iVert.v = iPoint;
             iVert.heIndex = (short)heMesh.halfEdges.Count;
             iVert.config = PlaneConfig.On;
             heMesh.vertices.Add(iVert);
-            HalfEdge[] newHEs = HalfEdge.CreateFromTwo(he, heOpp,(short)heMesh.halfEdges.Count,(short)(heMesh.vertices.Count - 1));
+            HalfEdge[] newHEs = HalfEdge.CreateFromTwo(he, heOpp, (short)heMesh.halfEdges.Count, (short)(heMesh.vertices.Count - 1));
             heMesh.halfEdges.Add(newHEs[0]);
             heMesh.halfEdges.Add(newHEs[1]);
 
@@ -88,30 +87,53 @@ public class HalfEdgeDebug : MonoBehaviour
         }
 
         heMesh.Triangulate();
-        // TODO:
-        // Split in two and triangulate the cap! Probably triangulate the cap first then:
-        // Mesh A: Left + ON vertices. Left is any face with ATLEAST one LEFT vertex.
-        // Mesh B: Right + ON 
         HalfEdgeMesh rightMesh = new HalfEdgeMesh();
         HalfEdgeMesh leftMesh = new HalfEdgeMesh();
         heMesh.SplitInLeftAndRightMesh(leftMesh, rightMesh);
 
-         mf.mesh = heMesh.GetMesh();
-        //  mf.mesh = HalfEdge.CreateMeshFromHalfEdge(faces, vertices, halfEdges);
-        //  mf.mesh.RecalculateNormals(); // Doesn't smooth the mesh :)
+        GameObject copy = Instantiate(gameObject);
+        HalfEdgeDebug copyDebug = copy.GetComponent<HalfEdgeDebug>();
 
-        // Test p3 intersection
-        Plane p1 = new Plane(new Vector3(1.0f, 0.0f, 0.0f), new Vector3(0.0f, 0.0f, 0.0f));
-        Plane p2 = new Plane(new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 5.0f, 0.0f));
-        Plane p3 = new Plane(new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 3.0f));
-        Vector3 inter = Plane.PlanePlanePlaneIntersect(p1, p2, p3);
-        Debug.Log("intersect point = " + inter);
+        rightMesh.CapClipPlane(plane.normal);
+        copyDebug.heMesh = rightMesh;
+        copyDebug.meshFilter.mesh = rightMesh.GetMesh();
+        //  MeshFilter mfCpy = copy.GetComponent<MeshFilter>();
+        leftMesh.CapClipPlane(-plane.normal);
+        meshFilter.mesh = leftMesh.GetMesh();
+
+        heMesh.CreateStructureFromMesh(mesh);
+      //  copyDebug.heMesh.CreateStructureFromMesh(copyDebug.meshFilter.mesh);
+
     }
 
+    // Start is called before the first frame update
+    void Start()
+    {
+        // Get the mesh
+        meshFilter = this.gameObject.GetComponent<MeshFilter>();
+        mesh = meshFilter.mesh;
+        InitHalfEdgeMesh();
+    }
+
+
+
+    float r = 0.0f;
+    float timer = 0.0f;
     // Update is called once per frame
     void Update()
     {
-        
+        if (timer > 0.0f)
+        {
+            timer -= Time.deltaTime;
+        }
+        if (Input.GetKey(KeyCode.A) && timer <= 0.0f)
+        {
+            Debug.Log("Do cut ayy");
+            Plane p = new Plane(new Vector3(1.0f ,1.0f + r, 0.0f).normalized, new Vector3(0.0f, 0.0f, 0.0f));
+            CutWithPlane(p);
+            r += 1.0f;
+            timer = 1.0f;
+        }
     }
 
     public void OnDrawGizmos()

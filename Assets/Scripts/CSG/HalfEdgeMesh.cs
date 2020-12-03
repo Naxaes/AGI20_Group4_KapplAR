@@ -92,9 +92,9 @@ public class HalfEdgeMesh
             h1.index = i1;
             h2.index = i2;
 
-            h0.faceIndex = i0;
-            h1.faceIndex = i0;
-            h2.faceIndex = i0;
+            h0.faceIndex = (short) (i0/3);
+            h1.faceIndex = (short) (i0/3);
+            h2.faceIndex = (short) (i0/3);
 
             h0.verIndex = (short)meshTriangles[i];
             h1.verIndex = (short)meshTriangles[i + 1];
@@ -259,16 +259,7 @@ public class HalfEdgeMesh
             // There are two cases, 4 or 5 vertices, for 4 vertices we can just do it over the diagonal
             if (faceEdges.Count == 4)
             {
-                HEFace newFace = new HEFace();
-                newFace.normal = faces[i].normal;
-
-                // Create new edge over diagonal
-                // Make function to find the next diagonal that forms a triangle
-                HalfEdge newEdge = new HalfEdge();
-                HalfEdge from = halfEdges[faces[i].heIndex];
-                HalfEdge to = halfEdges[halfEdges[from.nextIndex].nextIndex];
-
-                Debug.Log("4!");
+                // When cutting this doesn't happen (Maybe in a degenerate case??
             } else if (faceEdges.Count == 5)
             {
                 // Algorithm;
@@ -276,13 +267,16 @@ public class HalfEdgeMesh
                 List<short> onPlaneIdx = GetConfigEdges(faces[i], PlaneConfig.On);
                 List<short> leftPlaneIdx = GetConfigEdges(faces[i], PlaneConfig.Left);
                 List<short> rightPlaneIdx = GetConfigEdges(faces[i], PlaneConfig.Right);
-                Debug.Log("on = " + onPlaneIdx.Count + ". Left = " + leftPlaneIdx.Count + ". Right = " + rightPlaneIdx.Count);
                 // Either there are two on the left side or on the right side.  (Always 2 On)
                 // This will be the left place idx face. We need to create two new half-edges between the on edges
                 // Lets say we have l1-l2-o1-r1-o2  then the right triangle is o1-r1-o2
                 // Should make a function that takes a face and two vertices (half edges rather) and splits it in two
                 List<short> onEdgesIndices = GetConfigEdges(faces[i], PlaneConfig.On);
+
+                Debug.Log("Split face " + i + " before: " + PrintFaceConfig(faces[i]));
                 SplitFace(faces[i], halfEdges[onEdgesIndices[0]], halfEdges[onEdgesIndices[1]]);
+                Debug.Log("Split face " + i + " after: " + PrintFaceConfig(faces[i]));
+                Debug.Log(i + " and new = " + PrintFaceConfig(faces[faces.Count - 1]));
                 // TODO: Make a verify function that verifies the half-edge data structure...
                 // Check that the new faces are atleast the right size..
                 List<short> f1 = HalfEdge.FaceHalfEdges(faces[i], halfEdges);
@@ -290,22 +284,124 @@ public class HalfEdgeMesh
                 // One of the new faces have 4 vertices, so we need to triangulate it / split into two
                 if (f1.Count == 4)
                 {
+                    Debug.Log("Split face " + i + "f1 before: " + PrintFaceConfig(faces[i]));
                     SplitFace(faces[i], halfEdges[faces[i].heIndex], halfEdges[halfEdges[halfEdges[faces[i].heIndex].nextIndex].nextIndex]);
+                    Debug.Log("Split face " + i + "f1 after: " + PrintFaceConfig(faces[i]));
+                    Debug.Log(i + "f1 and new = " + PrintFaceConfig(faces[faces.Count - 1]));
                 } else
                 {
                     int idx = faces.Count - 1;
+                    Debug.Log("Split face " + i + "f2 before: " + PrintFaceConfig(faces[idx]));
                     SplitFace(faces[idx], halfEdges[faces[idx].heIndex], halfEdges[halfEdges[halfEdges[faces[idx].heIndex].nextIndex].nextIndex]);
+                    Debug.Log("Split face " + i + "f2 after: " + PrintFaceConfig(faces[idx]));
+                    Debug.Log(i + "f2 and new = " + PrintFaceConfig(faces[idx]));
+                    Debug.Log(i + "f2 and new 2 = " + PrintFaceConfig(faces[idx+1]));
                 }
-
-
-                Debug.Log(i + ". f1 = " + f1.Count + ". f2 = " + f2.Count);
             } else
             {
                 // Don't go here...
                 // shouldn't be possible
             }
-
         }
+        Debug.Log("Face count = " + faces.Count);
+        foreach (HalfEdge h in halfEdges)
+        {
+            Debug.Log("fidx = " + h.faceIndex);
+        }
+    }
+
+    public void CapClipPlane(Vector3 planeNormal)
+    {
+        // VERY IMPORTANT: Changes the half-edge structure but it is not a complete structure!
+        // No oppositeIndices are added. Can be made complete by generating the mesh and then turn the mesh
+        // into a half-edge structure. Major hack and major performance loss.
+
+
+        // Idea:
+        // Cap the clip by generating a new vertex at the center of the clipping area.
+        // Then take all faces with two ON vertices and create a new face :- )
+        // Then do MeshFromHalfedge -> and back again for a good half-edge structure.... 
+
+        // Calculate new vertex pos
+        Vector3 centerVert = new Vector3(0.0f, 0.0f, 0.0f);
+        foreach (HEVertex v in vertices)
+        {
+            if (v.config == PlaneConfig.On)
+                centerVert += v.v;
+        }
+        centerVert = centerVert / (float)vertices.Count;
+        HEVertex newVert = new HEVertex
+        {
+            v = centerVert,
+            config = PlaneConfig.On
+        };
+        vertices.Add(newVert);
+        short verIdx = (short)(vertices.Count - 1);
+        Debug.Log("New vert pos = " + centerVert);
+
+        // Get all faces with two ON vertices
+        Dictionary<short, List<short>> onFaces = GetTwoOnFaces();
+
+        foreach (KeyValuePair<short, List<short>> kvp in onFaces)
+        {
+            Debug.Log("A new Face is made!");
+            // Make new face
+            HalfEdge h0 = new HalfEdge();
+            HalfEdge h1 = new HalfEdge();
+            HalfEdge h2 = new HalfEdge();
+            short heIdx = (short) (halfEdges.Count);
+            h0.index = heIdx;
+            h1.index = (short)(heIdx + 1);
+            h2.index = (short)(heIdx + 2);
+            h0.nextIndex = h1.index;
+            h1.nextIndex = h2.index;
+            h2.nextIndex = h0.index;
+            h0.verIndex = kvp.Value[0];
+            h1.verIndex = verIdx;
+            h2.verIndex = kvp.Value[1];
+            HEFace newFace = new HEFace
+            {
+                heIndex = h0.index,
+                normal = planeNormal
+            };
+            short faceIdx = (short)faces.Count;
+            h0.faceIndex = faceIdx;
+            h1.faceIndex = faceIdx;
+            h2.faceIndex = faceIdx;
+            halfEdges.Add(h0);
+            halfEdges.Add(h1);
+            halfEdges.Add(h2);
+            faces.Add(newFace);
+        }
+    }
+
+    private Dictionary<short, List<short>> GetTwoOnFaces()
+    {
+        Dictionary<short, List<short>> res = new Dictionary<short, List<short>>();
+
+        for (int i = 0; i < faces.Count; i++)
+        {
+            List<short> onVerts = GetOnVertices(faces[i]);
+            if (onVerts.Count == 2)
+            {
+                res[(short)i] = onVerts; 
+            }
+        }
+        return res;
+    }
+
+    private List<short> GetOnVertices(HEFace face)
+    {
+        List<short> res = new List<short>();
+        List<short> he = HalfEdge.FaceHalfEdges(face, halfEdges);
+        foreach (short s in he)
+        {
+            if (vertices[halfEdges[s].verIndex].config == PlaneConfig.On)
+            {
+                res.Add(halfEdges[s].verIndex);
+            }
+        }
+        return res;
     }
 
     // Every face should be a triangle! So call Triangulate first
@@ -320,32 +416,31 @@ public class HalfEdgeMesh
         short rVertIdx = 0;
         foreach (HEVertex v in vertices)
         {
-            HEVertex newVL = new HEVertex { v = v.v };
-            HEVertex newVR = new HEVertex { v = v.v };
-            if (v.config == PlaneConfig.Left && !leftVertDict.ContainsKey(v.v))
+            Debug.Log("lVertIdx = " + lVertIdx);
+            HEVertex newVL = new HEVertex { v = v.v, heIndex = v.heIndex};
+            HEVertex newVR = new HEVertex { v = v.v, heIndex = v.heIndex};
+            if (v.config == PlaneConfig.Left)
             {
+                newVL.config = PlaneConfig.Left;
                 leftVertDict.Add(v.v, lVertIdx);
                 left.vertices.Add(newVL);
                 lVertIdx++;
-            } else if (v.config == PlaneConfig.Right && !rightVertDict.ContainsKey(v.v))
+            } else if (v.config == PlaneConfig.Right)
             {
+                newVR.config = PlaneConfig.Right;
                 rightVertDict.Add(v.v, rVertIdx);
                 right.vertices.Add(newVR);
                 rVertIdx++;
             } else
             {
-                if (!leftVertDict.ContainsKey(v.v))
-                {
-                    leftVertDict.Add(v.v, lVertIdx);
-                    left.vertices.Add(newVL);
-                    lVertIdx++;
-                }
-                if (!rightVertDict.ContainsKey(v.v))
-                {
-                    rightVertDict.Add(v.v, rVertIdx);
-                    right.vertices.Add(newVR);
-                    rVertIdx++;
-                }
+                newVR.config = PlaneConfig.On;
+                newVL.config = PlaneConfig.On;
+                leftVertDict.Add(v.v, lVertIdx);
+                left.vertices.Add(newVL);
+                lVertIdx++;
+                rightVertDict.Add(v.v, rVertIdx);
+                right.vertices.Add(newVR);
+                rVertIdx++;
             }
         }
         // The dicts should map old idx -> new idx...
@@ -353,37 +448,68 @@ public class HalfEdgeMesh
         Dictionary<short, short> rightEdgeIdxMap = new Dictionary<short, short>();
         Dictionary<short, short> leftFaceIdxMap = new Dictionary<short, short>();
         Dictionary<short, short> rightFaceIdxMap = new Dictionary<short, short>();
-
+        int lEdgeIdx = 0;
+        int lFaceIdx = 0;
+        int rEdgeIdx = 0;
+        int rFaceIdx = 0;
         // Build the idx maps
         foreach (HalfEdge h in halfEdges)
         {
-            short lEdgeIdx = 0;
-            short lFaceIdx = 0;
-            short rEdgeIdx = 0;
-            short rFaceIdx = 0;
+
+           Debug.Log(h.index + " idx! " + faces.Count + ". " + h.faceIndex);
             PlaneConfig pConfig = GetFaceConfig(faces[h.faceIndex]);
             if (pConfig == PlaneConfig.Left)
             {
-                leftEdgeIdxMap.Add(h.index, lEdgeIdx);
-                left.halfEdges.Add(h);
+                if (h.index == 1)
+                {
+                   Debug.Log("LEFT! + " + lEdgeIdx);
+                    Debug.Log(" next is " + halfEdges[h.index].nextIndex);
+                    List<short> s1 = HalfEdge.FaceHalfEdges(faces[h.faceIndex], halfEdges);
+                    List<short> s2 = HalfEdge.FaceHalfEdges(faces[halfEdges[h.nextIndex].faceIndex], halfEdges);
+                    string r = "";
+                    Debug.Log(s1.Count + " " + s2.Count);
+                    for (int k = 0; k < 3; k++)
+                    {
+                        r += "("+ s1[k] + ", " + s2[k] + ")  " + halfEdges[s1[k]].faceIndex + ". " + halfEdges[s2[k]].faceIndex + "    .  ";
+                    }
+                    Debug.Log(r);
+                }
+                leftEdgeIdxMap.Add(h.index, (short)lEdgeIdx);
+                left.halfEdges.Add(h.Copy());
                 lEdgeIdx++;
+                Debug.Log("lEdgeIdx = " + lEdgeIdx);
                 if (!leftFaceIdxMap.ContainsKey(h.faceIndex))
                 {
-                    left.faces.Add(faces[h.faceIndex]);
+                    left.faces.Add(faces[h.faceIndex].Copy());
                     left.faces[lFaceIdx].heIndex = (short)(lEdgeIdx - 1);
-                    leftFaceIdxMap.Add(h.faceIndex, lFaceIdx);
+                    leftFaceIdxMap.Add(h.faceIndex, (short)lFaceIdx);
                     lFaceIdx++;
                 }
             } else if (pConfig == PlaneConfig.Right)
             {
-                rightEdgeIdxMap.Add(h.index, rEdgeIdx);
-                right.halfEdges.Add(h);
+                if (h.index == 54)
+                {
+                    Debug.Log("RIGHT! " + rEdgeIdx);
+                   Debug.Log(" next is " + halfEdges[h.index].nextIndex);
+                    List<short> s1 = HalfEdge.FaceHalfEdges(faces[h.faceIndex], halfEdges);
+                    List<short> s2 = HalfEdge.FaceHalfEdges(faces[halfEdges[h.nextIndex].faceIndex], halfEdges);
+                    string r = "";
+                    Debug.Log(s1.Count + " " + s2.Count);
+                    for (int k = 0; k < 3; k++)
+                    {
+                        r += "(" + s1[k] + ", " + s2[k] + ")  " + halfEdges[s1[k]].faceIndex + ". " + halfEdges[s2[k]].faceIndex + "    .  ";
+                    }
+                    Debug.Log(r);
+                }
+                rightEdgeIdxMap.Add(h.index, (short)rEdgeIdx);
+                right.halfEdges.Add(h.Copy());
                 rEdgeIdx++;
+               Debug.Log(h.index + " redge = " + rEdgeIdx);
                 if (!rightFaceIdxMap.ContainsKey(h.faceIndex))
                 {
-                    right.faces.Add(faces[h.faceIndex]);
+                    right.faces.Add(faces[h.faceIndex].Copy());
                     right.faces[rFaceIdx].heIndex = (short)(rEdgeIdx - 1); 
-                    rightFaceIdxMap.Add(h.faceIndex, rFaceIdx);
+                    rightFaceIdxMap.Add(h.faceIndex, (short)rFaceIdx);
                     rFaceIdx++;
                 }
             } else // On, not possible for a face?
@@ -397,10 +523,10 @@ public class HalfEdgeMesh
         foreach (KeyValuePair<short, short> kvp in leftEdgeIdxMap)
         {
             // The edge
-            left.halfEdges[kvp.Value].index = kvp.Value;
-            left.halfEdges[kvp.Value].faceIndex = leftFaceIdxMap[kvp.Key];
+            left.halfEdges[kvp.Value].faceIndex = leftFaceIdxMap[halfEdges[kvp.Key].faceIndex];
             left.halfEdges[kvp.Value].nextIndex = leftEdgeIdxMap[halfEdges[kvp.Key].nextIndex];
             left.halfEdges[kvp.Value].verIndex = leftVertDict[vertices[halfEdges[kvp.Key].verIndex].v];
+            left.halfEdges[kvp.Value].index = kvp.Value;
             // face done in loop above
 
             // Update vertices edge index, doesn't matter if we overwrite
@@ -409,10 +535,10 @@ public class HalfEdgeMesh
         foreach (KeyValuePair<short, short> kvp in rightEdgeIdxMap)
         {
             // The edge
-            right.halfEdges[kvp.Value].index = kvp.Value;
-            right.halfEdges[kvp.Value].faceIndex = rightFaceIdxMap[kvp.Key];
+            right.halfEdges[kvp.Value].faceIndex = rightFaceIdxMap[halfEdges[kvp.Key].faceIndex];
             right.halfEdges[kvp.Value].nextIndex = rightEdgeIdxMap[halfEdges[kvp.Key].nextIndex];
             right.halfEdges[kvp.Value].verIndex = rightVertDict[vertices[halfEdges[kvp.Key].verIndex].v];
+            right.halfEdges[kvp.Value].index = kvp.Value;
             // face done in loop above
 
             // Update vertices edge index, doesn't matter if we overwrite
@@ -427,10 +553,17 @@ public class HalfEdgeMesh
         foreach (short s in heIdx)
         {
             if (vertices[halfEdges[s].verIndex].config == PlaneConfig.Left)
+            {
+                Debug.Log("left = " + s);
                 return PlaneConfig.Left;
+            }
             else if (vertices[halfEdges[s].verIndex].config == PlaneConfig.Right)
+            {
+                Debug.Log("right = " + s);
                 return PlaneConfig.Right;
+            }
         }
+        Debug.Log("ON ???? REEE");
         return PlaneConfig.On;
     }
 
@@ -447,12 +580,14 @@ public class HalfEdgeMesh
         HalfEdge h0TOh1 = new HalfEdge();
         // Update face halfedge indices
         newFace.heIndex = h0.index;
+        // Update old face half edge index to h1
+        faces[h1.faceIndex].heIndex = h1.index;
         face.heIndex = h1.index;
         // Set new half edge data
         h1TOh0.index = (short)halfEdges.Count;
         h0TOh1.index = (short)(halfEdges.Count + 1);
         h1TOh0.faceIndex = (short)faces.Count; // part of new face
-        h0TOh1.faceIndex = h0.faceIndex; // old face
+        h0TOh1.faceIndex = h1.faceIndex;       // old face
         h1TOh0.verIndex = h1.verIndex;
         h0TOh1.verIndex = h0.verIndex;
         h1TOh0.nextIndex = h0.index;
@@ -462,28 +597,22 @@ public class HalfEdgeMesh
         // Update the next of the edges before h0 and h1
         // this is hard...
      //   Debug.Log("1");
-        short b4h1 = h0.nextIndex; // Bless thy names
+        short b4h1 = h0.index; // Bless thy names
         while (halfEdges[b4h1].nextIndex != h1.index)
         {
             b4h1 = halfEdges[b4h1].nextIndex;
         }
-      //  Debug.Log("2");
         halfEdges[b4h1].nextIndex = h1TOh0.index;
-     //   Debug.Log("2.1");
-        short b4h0 = h1.nextIndex; // Bless thy names
+        short b4h0 = h1.index; // Bless thy names
         while (halfEdges[b4h0].nextIndex != h0.index)
         {
-       //     Debug.Log("2.3 : " + halfEdges[b4h0].nextIndex + " . " + (halfEdges.Count + 1));
             b4h0 = halfEdges[b4h0].nextIndex;
         }
-     //   Debug.Log("3");
         halfEdges[b4h0].nextIndex = h0TOh1.index;
         // Update the face index of edges in the new face h0-..-..-h1toh0
-        short first = h0.index;
         h0.faceIndex = (short)faces.Count;
-        short next = h0.nextIndex;
+        short next = h0.index;
         // Walk the next index until we return to the first.
-       // Debug.Log("4");
         while (next != h1TOh0.index)
         {
             halfEdges[next].faceIndex = (short)faces.Count;
@@ -492,6 +621,20 @@ public class HalfEdgeMesh
         halfEdges.Add(h1TOh0);
         halfEdges.Add(h0TOh1);
         faces.Add(newFace);
+    }
+
+    private string PrintFaceConfig(HEFace face)
+    {
+        List<short> he = HalfEdge.FaceHalfEdges(face, halfEdges);
+        string res = "";
+        string res1 = "face idx: ";
+        foreach (short s in he)
+        {
+            res += " " + vertices[halfEdges[s].verIndex].config.ToString() + "(" + s + "," + halfEdges[s].nextIndex + ")" + " ";
+            res1 += s + ": " + halfEdges[s].faceIndex + ".   ";
+        }
+        res1 += ".  with face pointing at = " + faces[halfEdges[he[0]].faceIndex].heIndex;
+        return res + "\n" + res1;
     }
 
     // Return indices of HalfEdges with vertices that have the given config

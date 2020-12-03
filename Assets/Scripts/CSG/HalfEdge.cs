@@ -30,6 +30,16 @@ namespace KaplaCSG
     {
         public short heIndex = -1; // Store one halfedge bordering each face.
         public Vector3 normal; // TODO LÄS HÖGS UP
+
+        public HEFace Copy()
+        {
+            HEFace c = new HEFace
+            {
+                heIndex = this.heIndex,
+                normal = new Vector3(normal.x, normal.y, normal.z)
+            };
+            return c;
+        }
     }
 
 
@@ -48,6 +58,18 @@ namespace KaplaCSG
         public short nextIndex = -1;     // Index to the next half-edge around the face
         public short index = -1;         // Index to where in the halfedge list it is
 
+        public HalfEdge Copy()
+        {
+            HalfEdge c = new HalfEdge
+            {
+                verIndex = this.verIndex,
+                oppositeIndex = this.oppositeIndex,
+                faceIndex = this.faceIndex,
+                nextIndex = this.nextIndex,
+                index = this.index
+            };
+            return c;
+        }
 
         /*
          * Create a pair of half-edges with a new vertex in between two other half-edges.

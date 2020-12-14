@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using KaplaCSG;
 
-public class HalfEdgeDebug : MonoBehaviour
+public class SliceableWithPlane : MonoBehaviour
 {
     List<Vector3> iPoints = new List<Vector3>();
-    public MeshFilter meshFilter;
+    MeshFilter meshFilter;
     Mesh mesh;
-    public HalfEdgeMesh heMesh;
+    HalfEdgeMesh heMesh;
     public GameObject objectToCopy;
     public GameObject cutPlane;
 
@@ -19,8 +19,10 @@ public class HalfEdgeDebug : MonoBehaviour
 
     public void CutWithPlane(Plane plane)
     {
+       
         float sTime = Time.realtimeSinceStartup;
-        meshFilter = this.gameObject.GetComponent<MeshFilter>();
+        GameObject child = gameObject.transform.GetChild(0).gameObject;
+        meshFilter = child.GetComponent<MeshFilter>();
         mesh = meshFilter.mesh;
         InitHalfEdgeMesh();
         bool[] visited = new bool[heMesh.halfEdges.Count];
@@ -96,7 +98,7 @@ public class HalfEdgeDebug : MonoBehaviour
                 // No intersection on line segment OR parallel with plane
                 continue;
             }
-           // Debug.Log(t);
+            // Debug.Log(t);
             // add new intersection vertex to half-edge structure
             HEVertex iVert = new HEVertex();
             iVert.v = iPoint;
@@ -121,13 +123,14 @@ public class HalfEdgeDebug : MonoBehaviour
         heMesh.SplitInLeftAndRightMesh(leftMesh, rightMesh);
 
         GameObject copy = Instantiate(objectToCopy);
-        HalfEdgeDebug copyDebug = copy.GetComponent<HalfEdgeDebug>();
+        GameObject childCopy = copy.transform.GetChild(0).gameObject;
+        SliceableWithPlane copyDebug = copy.GetComponent<SliceableWithPlane>();
 
         newVertCoord /= (float)onCount;
 
         rightMesh.CapClipPlane(plane.normal, newVertCoord);
         copyDebug.heMesh = rightMesh;
-        copyDebug.meshFilter = copy.GetComponent<MeshFilter>();
+        copyDebug.meshFilter =  childCopy.GetComponent<MeshFilter>();
         copyDebug.meshFilter.mesh = rightMesh.GetMesh();
         //  MeshFilter mfCpy = copy.GetComponent<MeshFilter>();
         leftMesh.CapClipPlane(-plane.normal, newVertCoord);
@@ -149,6 +152,12 @@ public class HalfEdgeDebug : MonoBehaviour
         copyDebug.cutPlane = cutPlane;
         //heMesh.CreateStructureFromMesh(mesh);
         //copyDebug.heMesh.CreateStructureFromMesh(copyDebug.meshFilter.mesh);
+        child.GetComponent<MeshCollider>().sharedMesh = null;
+        child.GetComponent<MeshCollider>().sharedMesh = meshFilter.mesh;
+        
+        childCopy.GetComponent<MeshCollider>().sharedMesh = null;
+        childCopy.GetComponent<MeshCollider>().sharedMesh = copyDebug.meshFilter.mesh;
+        //  child.GetComponent<MeshCollider>().gameObject.SetActive(true);
         float eTime = Time.realtimeSinceStartup - sTime;
         Debug.Log("Time taken = " + eTime);
     }
@@ -157,9 +166,9 @@ public class HalfEdgeDebug : MonoBehaviour
     void Start()
     {
         // Get the mesh
-      //  meshFilter = this.gameObject.GetComponent<MeshFilter>();
-      //  mesh = meshFilter.mesh;
-      //  InitHalfEdgeMesh();
+        //  meshFilter = this.gameObject.GetComponent<MeshFilter>();
+        //  mesh = meshFilter.mesh;
+        //  InitHalfEdgeMesh();
     }
 
 
@@ -176,7 +185,8 @@ public class HalfEdgeDebug : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.A) && timer <= 0.0f)
         {
-            p = new Plane(gameObject.transform.InverseTransformDirection(cutPlane.transform.up).normalized, gameObject.transform.InverseTransformPoint(cutPlane.transform.position));
+            GameObject child = gameObject.transform.GetChild(0).gameObject;
+            p = new Plane(child.transform.InverseTransformDirection(cutPlane.transform.up).normalized, child.transform.InverseTransformPoint(cutPlane.transform.position));
             CutWithPlane(p);
             r += 1.0f;
             timer = 1.0f;
@@ -188,8 +198,8 @@ public class HalfEdgeDebug : MonoBehaviour
         Gizmos.color = Color.red;
         foreach (Vector3 p in iPoints)
         {
-       //    Gizmos.DrawSphere(gameObject.transform.TransformPoint(p), 0.05f);
-          
+            //    Gizmos.DrawSphere(gameObject.transform.TransformPoint(p), 0.05f);
+
         }
 
     }

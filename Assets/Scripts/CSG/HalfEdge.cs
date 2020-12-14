@@ -380,13 +380,11 @@ namespace KaplaCSG
                 List<short> faceHalfEdges = HalfEdge.FaceHalfEdges(face, halfEdges);
                 if (faceHalfEdges.Count != 3)
                 {
-                    Debug.Log("Face contains = " + faceHalfEdges.Count);
                     Debug.Assert(faceHalfEdges.Count == 3);
                 }
                 foreach (short i in faceHalfEdges)
                 {
                     meshVertices.Add(vertices[halfEdges[i].verIndex].v);
-                //    Debug.Log(vertices[halfEdges[i].verIndex].v);
                     meshNormals.Add(face.normal);
                     meshTriangles.Add(triIdx);
                     triIdx++;

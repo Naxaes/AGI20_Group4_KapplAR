@@ -11,7 +11,7 @@ public class BlockCollision : MonoBehaviour
     {
         
     }
-
+    /*
     // Update is called once per frame
     void Update()
     {
@@ -35,4 +35,5 @@ public class BlockCollision : MonoBehaviour
             Vibration.VibratePop();
         }
     }
+    */
 } 
